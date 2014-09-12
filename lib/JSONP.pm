@@ -163,6 +163,9 @@ sub new{
 	my $self = {};
 	$self->{_json} = JSON->new;
 	$self->{_json}->utf8->allow_nonref->allow_blessed->convert_blessed;
+    $self->{authenticated} = 0;
+    $self->{error} = 0;
+    $self->{errors} = [];
 	#$self->{_mod_perl} = defined $ENV{MOD_PERL};
 	#$ENV{PATH} = '' if $self->{_taint_mode} = ${^TAINT};
 	bless $self, $class;
