@@ -26,7 +26,8 @@ If you prefer, you can use I<-E<gt>new> just passing nothing in I<use>.
 
 	...
 
-	sub yoursubname{
+	sub yoursubname
+    {
 		$j->table->fields($sh->{NAME});
 		$j->table->data($sh->fetchall_arrayref);
 	}
@@ -40,7 +41,8 @@ OR
 
 	...
 
-	sub yoursubname{
+	sub yoursubname
+    {
 		$j->table->fields($sh->{NAME});
 		$j->table->data($sh->fetchall_arrayref);
 	}
@@ -55,7 +57,8 @@ You must declare the instance variable, remember to use I<local our>.
 
 	...
 
-	sub yoursubname{
+	sub yoursubname
+    {
 		$j->table->fields($sh->{NAME});
 		$j->table->data($sh->fetchall_arrayref);
 	}
@@ -68,7 +71,8 @@ option setting methods allow for chained calls:
 
 	...
 
-	sub yoursubname{
+	sub yoursubname
+    {
 		$j->table->fields($sh->{NAME});
 		$j->table->data($sh->fetchall_arrayref);
 	}
@@ -85,7 +89,7 @@ The jQuery call:
 		//your callback code
 	});
 
-processed by JSONP, will execute I<yoursubname> in your script if it exists, otherwise will return a JSONP codified error. The default error object returned by this module in its root level has a boolean "error" flag and an "errors" array where you can put a list of your customized errors. The structure of the elements of the array is of course free so you can adapt it to your needs and frameworks. The root level has also a boolean "authenticated" that you have to check to see if you are still/not yet authenticated and show the authentication form accordingly.
+processed by JSONP, will execute I<yoursubname> in your script if it exists, otherwise will return a JSONP codified error. The default error objext returned by this module in its root level has a boolean "error" flag and an "errors" array where you can put a list of your customized errors. The structure of the elements of the array is of course free so you can adapt it to your needs and frameworks.
 
 you can autovivify the response hash omiting braces
 
@@ -133,14 +137,15 @@ DONT'T DO THIS! :
 
 The purpose of JSONP is to give an easy and fast way to build JSON only web services that can be used even from a different domain from which one they are hosted on. It is supplied only the object interface: this module does not export any symbol, apart the optional pointer to its own instance in the CGI environment.
 Once you have the instance of JSONP, you can build a response hash tree, containing whatever data structure, that will be automatically sent back as JSON object to the calling page. The built-in automatic cookie session keeping uses a secure SHA256 to build the session key. The related cookie is HttpOnly, Secure (only SSL) and with path set way down the one of current script (keep the authentication script in the root of your scripts path to share session among all scripts). For high trusted intranet environments a method to disable the Secure flag has been supplied. The automatically built cookie key will be long exactly 64 chars (hex format). 
-You have to provide the string name or sub ref (the module accepts either way) of your own I<aaa> and I<login> functions. The AAA (aaa) function will get called upon every request with the session key (retrieved from session cookie or newly created for brand new sessions) as argument. That way you will be free to implement routines for authentication, authorization, access, and session tracking that most suit your needs, together with rules for user/groups to access the methods you expose. Your AAA function must return the session string (if you previously saved it, read on) if a valid session exists under the given key. A return value evaluated as false by perl will result in a 'forbidden' response (you can add as much errors as you want in the I<errors> array of response object). If you want you can check the invoked method under the req parameter (see query method) in order to implement your own access policies. The AAA function will be called a second time just before the response to client will be sent out, with the session key as first argument, and a serialized string of the B<session> branch as second (as you would have modified it inside your called function). This way if your AAA function gets called with only one paramenter it is the begin of the request cycle, and you have to retrieve and check the session saved in your preferred storage (memcached, database, whatever), if it gets called with two arguments you can save the updated session object (already serialized as UTF-8 JSON) to the storage under the given key. The B<session> key of JSONP object will be reserved for session tracking, everything you will save in that branch will be passed serialized to your AAA function right before the response to client. It will be also populated after the serialized string you will return from your AAA function at the beginning of the cycle. The login function will get called with the current session key (from cookie or newly created) as parameter, you can retrieve the username and password passed by the query method, as all other parameters. This way you will be free to give whatever name you like to those two parameters.
+You have to provide the string name or sub ref (the module accepts either way) of your own I<aaa> and I<login> functions. The AAA (aaa) function will get called upon every request with the session key (retrieved from session cookie or newly created for brand new sessions) as argument. That way you will be free to implement routines for authentication, authorization, access, and session tracking that most suit your needs, together with rules for user/groups to access the methods you expose. Your AAA function must return the session string (if you previously saved it, read on) if a valid session exists under the given key. A return value evaluated as false by perl will result in a 'forbidden' response (you can add as much errors as you want in the I<errors> array of response object). If you want you can check the invoked method under the req parameter (see query method) in order to implement your own access policies. The AAA function will be called a second time just before the response to client will be sent out, with the session key as first argument, and a serialized string of the B<session> branch as second (as you would have modified it inside your called function). This way if your AAA function gets called with only one paramenter it is the begin of the request cycle, and you have to retrieve and check the session saved in your storage of chose (memcached, database, whatever), if it gets called with two arguments you can save the updated session object (already serialized as UTF-8 JSON) to the storage under the given key. The B<session> key of JSONP object will be reserved for session tracking, everything you will save in that branch will be passed serialized to your AAA function right before the response to client. It will be also populated after the serialized string you will return from your AAA function at the beginning of the cycle. The login function will get called with the current session key (from cookie or newly created) as parameter, you can retrieve the username and password passed by the query method, as all other parameters. This way you will be free to give whatever name you like to those two parameters.
 So if you need to add a method/call/feature to your application you have only to add a sub with same name you will pass under I<req> parameter.
 
 =head2 METHODS
 
 =cut
 
-sub import{
+sub import
+{
 	my ($self, $name) = @_;
 	return if $ENV{MOD_PERL};
 	return unless $name;
@@ -158,11 +163,13 @@ class constructor, it does not accept any parameter by user. The options have to
 
 =cut
 
-sub new{
+our	$json = JSON->new;
+our	$json->utf8->allow_nonref->allow_blessed->convert_blessed;
+
+sub new
+{
 	my ($class) = @_;
 	my $self = {};
-	$self->{_json} = JSON->new;
-	$self->{_json}->utf8->allow_nonref->allow_blessed->convert_blessed;
     $self->{authenticated} = 0;
     $self->{error} = 0;
     $self->{errors} = [];
@@ -177,11 +184,12 @@ executes the subroutine specified by req paramenter, if it exists, and returns t
 
 =cut
 
-sub run{
+sub run
+{
 	my $self = shift;
 	die "you have to provide an AAA function" unless $self->{_aaa_sub};
 	my $r = CGI->new;
-	$self->{params} = $r->Vars;
+	$self->{params} = bless $r->Vars, ref $self;
 	my $req = $self->{params}->{req};
 	$req =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $req = $1;
 	my $sid = $r->cookie('sid');
@@ -189,7 +197,7 @@ sub run{
 	unless ( $sid ) {
 		my $h = Digest::SHA->new(256);
 		my @us = gettimeofday;
-		$h->add(@us, map($r->http($_) , $r->http() )) if	$self->{_insecure_session};
+		$h->add(@us, map($r->http($_) , $r->http() )) if	    $self->{_insecure_session};
 		$h->add(@us, map($r->https($_), $r->https())) unless	$self->{_insecure_session};
 		$sid = $h->hexdigest;
 		my $current_path = $r->url(-absolute=>1);
@@ -207,26 +215,25 @@ sub run{
 
 	my $map = caller() . '::' . $req;
 	my $session = $self->{_aaa_sub}->($sid);
-	$self->{session} = $self->{_json}->pretty($self->{_debug})->decode($session || '{}');
-    my $authenticated = keys %{$self->{session}};
+    $self->{session} = $session;
 	$self->_rebuild_session($self->{session});
+    $self->{authenticated} = !! scalar keys %{$self->{session}};
 	if ($session && defined &$map || \&$map == $self->{_login_sub}) {
 		eval {
 			no strict 'refs';
 			&$map($sid);
 		};
-		$self->{debug}->{eval} = $@ if $self->{_debug};
-		$self->{_aaa_sub}->($sid, $self->{_json}->pretty($self->{_debug})->encode($self->{session})) if $authenticated;
+		$self->{eval} = $@ if $self->{_debug};
+		$self->{_aaa_sub}->($sid, $json->pretty($self->{_debug})->encode($self->{session})) if $self->{authenticated};
 	}
 	else{
-		$self->{error} = 1;
-		push @{$self->{errors}}, 'forbidden';
+        $self->error('forbidden');
 	}
 
 	print $r->header($header);
 	my $callback = $self->{params}->{callback} || 'callback';
 	print "$callback(" unless $self->{_plain_json};
-	print $self->{_json}->pretty($self->{_debug})->encode($self);
+	print $json->pretty($self->{_debug})->encode($self);
 	print ')' unless $self->{_plain_json};
 }
 
@@ -242,7 +249,8 @@ is the same as:
 
 =cut
 
-sub debug{
+sub debug
+{
 	my ($self, $switch) = @_;
     $switch = 1 unless defined $switch;
     $switch = !!$switch;
@@ -256,7 +264,8 @@ call this method if you are going to deploy the script under plain http protocol
 
 =cut
 
-sub insecure{
+sub insecure
+{
 	my ($self, $switch) = @_;
     $switch = 1 unless defined $switch;
     $switch = !!$switch;
@@ -270,7 +279,8 @@ call this method with desired expiration time for cookie in B<seconds>, the defa
 
 =cut
 
-sub set_session_expiration{
+sub set_session_expiration
+{
 	my ($self, $expiration) = @_;
 	$self->{_session_expiration} = $expiration;
 	$self;
@@ -282,7 +292,8 @@ call this method to retrieve a named parameter, $jsonp->query(paramenter_name) w
 
 =cut
 
-sub query{
+sub query
+{
 	my ($self, $param) = @_;
 	$param ? $self->{params}->{$param} : $self->{params};
 }
@@ -293,7 +304,8 @@ call this function to enable output in simple JSON format (not enclosed within j
 
 =cut
 
-sub plain_json{
+sub plain_json
+{
 	my ($self, $switch) = @_;
     $switch = 1 unless defined $switch;
     $switch = !!$switch;
@@ -307,7 +319,8 @@ pass to this method the reference (or the name, either way will work) of the fun
 
 =cut
 
-sub aaa{
+sub aaa
+{
 	my ($self, $sub) = @_;
 	if (ref $sub eq 'CODE') {
 		$self->{_aaa_sub} = $sub;
@@ -329,7 +342,8 @@ pass to this method the reference (or the name, either way will work) of the fun
 
 =cut
 
-sub login{
+sub login
+{
 	my ($self, $sub) = @_;
 	if (ref $sub eq 'CODE') {
 		$self->{_login_sub} = $sub;
@@ -345,19 +359,35 @@ sub login{
 	$self;
 }
 
-sub _rebuild_session{
+=head3 error
+
+call this method in order to return an error message to the calling page. You can add as much messages you want, calling the method several times, it will be returned an array of messages to the calling page.
+
+=cut
+
+sub error
+{
+    my ($self, $message) = @_;
+    $self->{error} = 1;
+    push @{$self->{errors}}, $message;
+    $self;
+}
+
+sub _rebuild_session
+{
 	my ($self, $node) = @_;
 	return unless ref $node eq 'HASH';
 	bless $node, ref $self;
 	$self->_rebuild_session($node->{$_}) for keys %$node;
 }
 
-sub TO_JSON{
+sub TO_JSON
+{
 	my $self = shift;
 	my $output = {};
 	for(keys %{$self}){
 		next if $_ !~ /^[a-z]/;
-		#next if $_ eq 'session';
+		next if $_ eq 'session';
 		$output->{$_} = $self->{$_};
 	}
 	return $output;
@@ -366,7 +396,8 @@ sub TO_JSON{
 # avoid calling AUTOLOAD on destroy
 DESTROY{}
 
-AUTOLOAD{
+AUTOLOAD
+{
 	my $classname =  ref $_[0];
 	our $AUTOLOAD =~ /^${classname}::([a-zA-Z][a-zA-Z0-9_]*)$/;
 	my $key = $1;
