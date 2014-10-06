@@ -215,7 +215,7 @@ sub run
 
 	my $map = caller() . '::' . $req;
 	my $session = $self->{_aaa_sub}->($sid);
-    $self->{authenticated} = !! $session;
+    $self->{authenticated} = defined $session;
     $self->{session} = $session;
 	$self->_rebuild_session($self->{session});
 	if ($session && defined &$map || \&$map == $self->{_login_sub}) {
