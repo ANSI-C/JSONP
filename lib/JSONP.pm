@@ -235,6 +235,7 @@ sub run
 	print "$callback(" unless $self->{_plain_json};
 	print $json->pretty($self->{_debug})->encode($self);
 	print ')' unless $self->{_plain_json};
+    $self;
 }
 
 =head3 debug
