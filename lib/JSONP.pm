@@ -4,8 +4,10 @@ use Time::HiRes qw(gettimeofday);
 use CGI qw(:cgi -utf8);
 use Digest::SHA;
 use strict;
+use warnings;
 use JSON;
 use v5.8;
+use Want;
 our $VERSION = '0.78';
 
 =head1 NAME
@@ -165,8 +167,6 @@ class constructor, it does not accept any parameter by user. The options have to
 
 =cut
 
-our $json = JSON->new->utf8->allow_blessed->convert_blessed;
-
 sub new
 {
 	my ($class) = @_;
@@ -177,8 +177,22 @@ sub new
 	$self->{_passthrough} = 0;
 	$self->{_mimetype} = 'text/html';
 	$self->{_html} = 0;
+	$self->{_json} = JSON->new->utf8->allow_blessed->convert_blessed;
 	#$self->{_mod_perl} = defined $ENV{MOD_PERL};
 	#$ENV{PATH} = '' if $self->{_taint_mode} = ${^TAINT};
+	bless $self, $class;
+}
+
+=head3 tree
+
+class constructor for uses different from web service, it returns a JSONP object without web related initializations, useful for rapid construction and manipulation of Perl data structures meant to be serializated / deserializated to/from JSON
+
+=cut
+
+sub tree
+{
+	my ($class) = @_;
+	my $self = {};
 	bless $self, $class;
 }
 
@@ -223,7 +237,7 @@ sub run
 	my $session = $self->{_aaa_sub}->($sid);
 	$self->{authenticated} = !!$session;
 	if ($self->{authenticated}){
-		$self->{session} = $json->decode($session);
+		$self->{session} = $self->{_json}->decode($session);
 		$self->_rebuild_session($self->{session});
 	}
 
@@ -236,7 +250,7 @@ sub run
 			$self->{authenticated} = $outcome if \&$map == $self->{_login_sub};
 		};
 		$self->{eval} = $@ if $self->{_debug};
-		$self->{_aaa_sub}->($sid, $json->pretty($self->{_debug})->encode($self->{session} || {})) if $self->{authenticated};
+		$self->{_aaa_sub}->($sid, $self->{_json}->pretty($self->{_debug})->encode($self->{session} || {})) if $self->{authenticated};
 	}
 	else{
 		$self->error('forbidden');
@@ -246,7 +260,7 @@ sub run
 		print $r->header($header);
 		my $callback = $self->{params}->{callback} || 'callback';
 		print "$callback(" unless $self->{_plain_json};
-		print $json->pretty($self->{_debug})->encode($self);
+		print $self->{_json}->pretty($self->{_debug})->encode($self);
 		print ')' unless $self->{_plain_json};
 	} else {
 		$header->{'-type'} = $self->{_mimetype};
@@ -496,18 +510,23 @@ sub TO_JSON
 # avoid calling AUTOLOAD on destroy
 DESTROY{}
 
-AUTOLOAD
+sub AUTOLOAD : lvalue
 {
 	my $classname =  ref $_[0];
 	our $AUTOLOAD =~ /^${classname}::([a-zA-Z][a-zA-Z0-9_]*)$/;
 	my $key = $1;
+	#print "ref needed: ", want('REF LVALUE'), " - method: ", $AUTOLOAD, " - cur val: ", $_[0]->{$key} || '', " - val: |", $_[1] || '', '|', "\n"; 
 	die "illegal key name, must be of ([a-zA-Z][a-zA-Z0-9_]* form\n$AUTOLOAD" unless $key;
 	{
 		no strict 'refs';
+		#$_[0]->{_want} = 1;
+		my $val = defined $_[0]->{$key} && ref $_[0]->{$key} eq '' && want('REF OBJECT');
+		#print "$val\n";
 		# IMPORTANT NOTE: TRYING TO ASSIGN AN UNDEFINED VALUE TO A KEY WILL RESULT IN NODE CREATION WITH NO LEAFS INSTEAD OF A LEAF WITH UNDEFINED VALUE
-		*{$AUTOLOAD} = sub{defined $_[1] ? ($_[0]->{$key} = $_[1]) : (defined $_[0]->{$key} ? $_[0]->{$key} : ($_[0]->{$key} = bless {}, $classname));};
+		$_[0]->{$key} = $_[1] || $_[0]->{$key} || bless {}, $classname;
+		$_[0]->{$key} = bless {}, $classname if $val;
 	}
-	goto &$AUTOLOAD;
+	$_[0]->{$key};
 }
 
 =head1 NOTES
