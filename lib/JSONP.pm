@@ -7,7 +7,7 @@ use Digest::SHA;
 use JSON;
 use v5.8;
 #use Want;
-our $VERSION = '0.80';
+our $VERSION = '0.81';
 
 =head1 NAME
 
@@ -134,6 +134,15 @@ you can insert hashes at any level of structure  and they will become callable w
 	print $jsonp->first->second->b; # will print 2
 	$jsonp->first->second->b = 3;
 	print $jsonp->first->second->b; # will print 3
+
+you can insert also array at any level of structure  and the nodes (hashrefs) within resulting structure will become callable with the built-in convenience shortcut. You will need to call I<-<gt>>[index] in order to access them, though:
+
+	my $ary = [{a => 1}, 2];
+	$jsonp->first->second = $ary;
+	print $jsonp->first->second->[1]; # will print 2
+	print $jsonp->first->second->[0]->a; # will print 1
+	$jsonp->first->second->[0]->a = 9;
+	print $jsonp->first->second->[0]->a; # will print 9 now
 
 you can almost freely interleave above listed styles in order to access to elements of JSONP object. As usual, respect I<_private> variables if you don't know what you are doing. One value-leaf/object-node element set by the convenience notation shortcut will be read by normal hash access syntax, be aware that if you set a node/leaf with the traditional syntax, elements deeper that first one cannot be read via the convenience arrow-only feature. So it is a good practice to always use the convenience feature unless you have very specific needs and know and understand what you are doing.
 
@@ -520,9 +529,16 @@ sub error
 sub _bless_tree
 {
 	my ($self, $node) = @_;
-	return unless ref $node eq 'HASH';
+	return unless ref $node eq 'HASH' || ref $node eq 'ARRAY';
+	my $isarray = ref $node eq 'ARRAY';
+	my $ishash  = ref $node eq 'HASH';
 	bless $node, ref $self;
-	$self->_bless_tree($node->{$_}) for keys %$node;
+	if ($ishash){
+		$self->_bless_tree($node->{$_}) for keys %$node;
+	}
+	if ($isarray){
+		$self->_bless_tree($_) for @$node;
+	}
 }
 
 sub TO_JSON
@@ -534,6 +550,7 @@ sub TO_JSON
 	for(keys %{$self}){
 		next if $_ !~ /^[a-z]/;
 		next if $_ eq 'session' && ! $self->{_debug};
+		next if $_ eq 'params' && ! $self->{_debug};
 		$output->{$_} = $self->{$_};
 	}
 	return $output;
@@ -552,9 +569,10 @@ sub AUTOLOAD : lvalue
 	# Want::want will be called only if $_want is true, see want method
 	my $val = $_want && defined $_[0]->{$key} && ref $_[0]->{$key} eq '' && Want::want('REF OBJECT');
 	# TODO: recognise case of undef passed as scalar and avoid node creation instead
+	# TODO: enable if possible referencing array indexes without paretheses
 	# IMPORTANT NOTE: TRYING TO ASSIGN AN UNDEFINED VALUE TO A KEY WILL RESULT IN NODE CREATION WITH NO LEAFS INSTEAD OF A LEAF WITH UNDEFINED VALUE
 	$_[0]->{$key} = $_[1] || $_[0]->{$key} || bless {}, $classname;
-	$_[0]->_bless_tree($_[0]->{$key}) if ref $_[0]->{$key} eq 'HASH';
+	$_[0]->_bless_tree($_[0]->{$key}) if ref $_[0]->{$key} eq 'HASH' || ref $_[0]->{$key} eq 'ARRAY';
 	$_[0]->{$key} = bless {}, $classname if $val;
 	$_[0]->{$key};
 }
