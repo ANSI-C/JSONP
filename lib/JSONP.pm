@@ -7,7 +7,7 @@ use Digest::SHA;
 use JSON;
 use v5.8;
 #use Want;
-our $VERSION = '0.81';
+our $VERSION = '0.82';
 
 =head1 NAME
 
@@ -523,6 +523,25 @@ sub error
 	my ($self, $message) = @_;
 	$self->{error} = 1;
 	push @{$self->{errors}}, $message;
+	$self;
+}
+
+=head3 graft
+
+call this method to append a JSON object as a perl subtree on a node. This is a native method, only function notation is supported, lvalue assignment notation is reserved to autovivification shortcut feature. Examples:
+
+	$j->subtree->graft('newbranchname', '{"name" : "JSON object", "count" : 2}');
+	print $j->subtree->newbranchname->name; # will print "JSON object"
+	$j->sublist->graft->('newbranchname', '[{"name" : "first one"}, {"name" : "second one"}]');
+	print $j->sublist->newbranchname->[1]->name; will print "second one"
+
+=cut
+
+sub graft
+{
+	my ($self, $name, $json) = @_;
+	my $tree = JSON->new->decode($json);
+	$self->$name = $tree;
 	$self;
 }
 
