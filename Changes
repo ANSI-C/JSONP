@@ -1,5 +1,8 @@
 Revision history for Perl extension JSONP.
 
+0.83
+    - addition of serialize method, to directly export an object branch into a JSON string
+
 0.82
     - addition of graft method, to directly slurp JSON strings as subtree objects
 

@@ -7,7 +7,7 @@ use Digest::SHA;
 use JSON;
 use v5.8;
 #use Want;
-our $VERSION = '0.82';
+our $VERSION = '0.83';
 
 =head1 NAME
 
@@ -543,6 +543,25 @@ sub graft
 	my $tree = JSON->new->decode($json);
 	$self->$name = $tree;
 	$self;
+}
+
+=head3 serialize
+
+call this method to serialize and output a subtree:
+
+	$j->subtree->graft('newbranchname', '{"name" : "JSON object", "count" : 2}');
+	print $j->subtree->newbranchname->name; # will print "JSON object"
+	$j->sublist->graft->('newbranchname', '[{"name" : "first one"}, {"name" : "second one"}]');
+	print $j->sublist->newbranchname->[1]->name; will print "second one"
+	$j->subtree->newbranchname->graft('subtree', '{"name" : "some string", "count" : 4}');
+	print $j->subtree->newbranchname->subtree->serialize; # will print '{"name" : "some string", "count" : 4}' 
+
+=cut
+
+sub serialize
+{
+	my ($self) = @_;
+	JSON->new->utf8->allow_blessed->convert_blessed->encode($self);
 }
 
 sub _bless_tree
