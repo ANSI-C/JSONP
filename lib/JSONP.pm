@@ -7,7 +7,7 @@ use Digest::SHA;
 use JSON;
 use v5.8;
 #use Want;
-our $VERSION = '0.83';
+our $VERSION = '0.84';
 
 =head1 NAME
 
@@ -204,21 +204,20 @@ executes the subroutine specified by req paramenter, if it exists, and returns t
 sub run
 {
 	my $self = shift;
-	$self->{authenticated} = 0;
-	$self->{error} = 0;
-	$self->{errors} = [];
+	$self->{_authenticated} = 0;
+	$self->error = \0;
+	$self->errors = [];
 	$self->{_passthrough} = 0;
 	$self->{_mimetype} = 'text/html';
 	$self->{_html} = 0;
-	#$self->{_mod_perl} = defined $ENV{MOD_PERL};
+	$self->{_mod_perl} = defined $ENV{MOD_PERL};
 	#$ENV{PATH} = '' if $self->{_taint_mode} = ${^TAINT};
 	die "you have to provide an AAA function" unless $self->{_aaa_sub};
-	my $json = JSON->new->utf8->allow_blessed->convert_blessed;
 	my $r = CGI->new;
-	$self->{params} = bless $r->Vars, ref $self;
 	# this will enable us to give back the unblessed reference
-	$self->{_params} = $r->Vars;
-	my $req = $self->{params}->{req};
+	my %params = $r->Vars;
+	$self->params = \%params;
+	my $req = $self->params->req;
 	$req =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $req = $1;
 	my $sid = $r->cookie('sid');
 	my $header = {-type => 'application/javascript', -charset => 'UTF-8'};
@@ -243,32 +242,37 @@ sub run
 
 	my $map = caller() . '::' . $req;
 	my $session = $self->{_aaa_sub}->($sid);
-	$self->{authenticated} = !!$session;
-	if ($self->{authenticated}){
-		$self->{session} = $json->decode($session);
-		$self->_bless_tree($self->{session});
+	$self->{_authenticated} = !!$session;
+	if($self->{_authenticated}){
+		$self->graft('session', $session)
+	} else {
+		$self->session = {};
 	}
 
 	$$self{_cgi} = $r;
 
-	if ($session && defined &$map || \&$map == $self->{_login_sub}) {
+	if (!!$session && defined &$map || \&$map == $self->{_login_sub}) {
 		eval {
 			no strict 'refs';
 			my $outcome = &$map($sid);
-			$self->{authenticated} = $outcome if \&$map == $self->{_login_sub};
+			$self->{_authenticated} = $outcome if \&$map == $self->{_login_sub};
 		};
 		$self->{eval} = $@ if $self->{_debug};
-		$self->{_aaa_sub}->($sid, $json->pretty($self->{_debug})->encode($self->{session} || {})) if $self->{authenticated};
+		$self->{_aaa_sub}->($sid, $self->session->serialize) if $self->{_authenticated};
 	}
 	else{
 		$self->error('forbidden');
+		$self->{_authenticated} = 0;
 	}
+
+	# give a nice JSON "true"/"false" output for authentication
+	$self->authenticated = $self->{_authenticated} ? \1 : \0;
 
 	unless($self->{_passthrough}){
 		print $r->header($header);
-		my $callback = $self->{params}->{callback} || 'callback';
+		my $callback = $self->params->callback || 'callback';
 		print "$callback(" unless $self->{_plain_json};
-		print $json->pretty($self->{_debug})->encode($self);
+		print $self->serialize;
 		print ')' unless $self->{_plain_json};
 	} else {
 		$header->{'-type'} = $self->{_mimetype};
@@ -422,10 +426,11 @@ call this method to retrieve a named parameter, $jsonp->query(paramenter_name) w
 
 =cut
 
+# TODO remove query method, now it is useless
 sub query
 {
 	my ($self, $param) = @_;
-	$param ? $self->{_params}->{$param} : $self->{_params};
+	$param ? $self->params->{$param} : $self->params;
 }
 
 =head3 plain_json
@@ -521,7 +526,7 @@ call this method in order to return an error message to the calling page. You ca
 sub error
 {
 	my ($self, $message) = @_;
-	$self->{error} = 1;
+	$self->{error} = \1;
 	push @{$self->{errors}}, $message;
 	$self;
 }
@@ -540,8 +545,10 @@ call this method to append a JSON object as a perl subtree on a node. This is a 
 sub graft
 {
 	my ($self, $name, $json) = @_;
-	my $tree = JSON->new->decode($json);
-	$self->$name = $tree;
+	eval{
+		$self->$name = JSON->new->utf8->pretty($$self{_debug})->decode($json);
+	};
+	$self->$name = {error => 'failed to parse JSON string', JSON => $json} if $@;
 	$self;
 }
 
@@ -561,7 +568,7 @@ call this method to serialize and output a subtree:
 sub serialize
 {
 	my ($self) = @_;
-	JSON->new->utf8->allow_blessed->convert_blessed->encode($self);
+	JSON->new->utf8->pretty($$self{_debug})->allow_blessed->convert_blessed->encode($self);
 }
 
 sub _bless_tree
@@ -606,10 +613,9 @@ sub AUTOLOAD : lvalue
 	our $_want;
 	# Want::want will be called only if $_want is true, see want method
 	my $val = $_want && defined $_[0]->{$key} && ref $_[0]->{$key} eq '' && Want::want('REF OBJECT');
-	# TODO: recognise case of undef passed as scalar and avoid node creation instead
-	# TODO: enable if possible referencing array indexes without paretheses
 	# IMPORTANT NOTE: TRYING TO ASSIGN AN UNDEFINED VALUE TO A KEY WILL RESULT IN NODE CREATION WITH NO LEAFS INSTEAD OF A LEAF WITH UNDEFINED VALUE
-	$_[0]->{$key} = $_[1] || $_[0]->{$key} || bless {}, $classname;
+	# null strings are FALSE in Perl!!!
+	$_[0]->{$key} = $_[1] || $_[0]->{$key} // {};
 	$_[0]->_bless_tree($_[0]->{$key}) if ref $_[0]->{$key} eq 'HASH' || ref $_[0]->{$key} eq 'ARRAY';
 	$_[0]->{$key} = bless {}, $classname if $val;
 	$_[0]->{$key};
