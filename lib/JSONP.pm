@@ -7,7 +7,7 @@ use Digest::SHA;
 use JSON;
 use v5.8;
 #use Want;
-our $VERSION = '0.85';
+our $VERSION = '0.86';
 
 =head1 NAME
 
@@ -90,7 +90,7 @@ The jQuery call:
 		//your callback code
 	});
 
-processed by JSONP, will execute I<yoursubname> in your script if it exists, otherwise will return a JSONP codified error. The default error objext returned by this module in its root level has a boolean "error" flag and an "errors" array where you can put a list of your customized errors. The structure of the elements of the array is of course free so you can adapt it to your needs and frameworks.
+processed by JSONP, will execute I<yoursubname> in your script if it exists, otherwise will return a JSONP codified error. The default error object returned by this module in its root level has a boolean "error" flag and an "errors" array where you can put a list of your customized errors. The structure of the elements of the array is of course free so you can adapt it to your needs and frameworks.
 
 you can autovivify the response hash omiting braces
 
@@ -135,7 +135,7 @@ you can insert hashes at any level of structure  and they will become callable w
 	$jsonp->first->second->b = 3;
 	print $jsonp->first->second->b; # will print 3
 
-you can insert also array at any level of structure  and the nodes (hashrefs) within resulting structure will become callable with the built-in convenience shortcut. You will need to call I<-<gt>>[index] in order to access them, though:
+you can insert also array at any level of structure  and the nodes (hashrefs) within resulting structure will become callable with the built-in convenience shortcut. You will need to call C<-E<gt>[index]> in order to access them, though:
 
 	my $ary = [{a => 1}, 2];
 	$jsonp->first->second = $ary;
@@ -361,7 +361,7 @@ sub debug
 
 =head3 want
 
-this method will enable/disable the import of optional dependency module <I>Want to enable leaf values transformation in node without causing runtime errors. This will get working the following code instead of give a runtime error:
+this method will enable/disable the import of optional dependency module I<Want> to enable leaf values transformation in node without causing runtime errors. This will get working the following code instead of give a runtime error:
 
     $j->first = 9;
 
@@ -370,8 +370,7 @@ this method will enable/disable the import of optional dependency module <I>Want
     $j->first->second = 9;
     $j->first->second->third = 'Hi!';
 
-this will enable you to discard <I>second leaf value and append to it whatever data structure you like
-note that the default value for the switch is true, like other ones, so
+this will enable you to discard I<second> leaf value and append to it whatever data structure you like. Please note that the default value for the switch is true, like other ones, so
 
     $j->want->run;
 
@@ -634,7 +633,7 @@ this module requires at least perl 5.8
 
 =head2 DEPENDENCIES
 
-JSON is the only non-core module used by this one, use of JSON::XS is strongly advised for the sake of performance. JSON::XS is been loaded transparently by JSON module when installed.
+JSON is the only non-core module used by this one, use of JSON::XS is strongly advised for the sake of performance. JSON::XS is been loaded transparently by JSON module when installed. Want module usage is optional and used only for leaft-to-node transparent replacing feature, you can load transparently Want module and enable the feature by simply adding C<-E<gt>want> call to the chain of call before C<-E<gt>run>. CGI module is a core one, now deprecated and likely to be removed from core modules in next versions of Perl, will probably remove its usage.
 
 =head1 SECURITY
 
@@ -651,6 +650,13 @@ Remember to always:
 =item 4. use SSL when you are keeping track of sessions
 
 =back
+
+=cut
+
+=head1 HELP and development
+
+the author would be happy to receive suggestions and bug notification. If somebody would like to send code and automated tests for this module, I will be happy to integrate it.
+The code for this module is tracked on this L<GitHub page|https://github.com/ANSI-C/JSONP>.
 
 =cut
 
