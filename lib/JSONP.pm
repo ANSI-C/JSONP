@@ -7,7 +7,7 @@ use Digest::SHA;
 use JSON;
 use v5.8;
 #use Want;
-our $VERSION = '0.84';
+our $VERSION = '0.85';
 
 =head1 NAME
 
@@ -205,7 +205,7 @@ sub run
 {
 	my $self = shift;
 	$self->{_authenticated} = 0;
-	$self->error = \0;
+	$self->{error} = \0;
 	$self->errors = [];
 	$self->{_passthrough} = 0;
 	$self->{_mimetype} = 'text/html';
@@ -546,9 +546,10 @@ sub graft
 {
 	my ($self, $name, $json) = @_;
 	eval{
-		$self->$name = JSON->new->utf8->pretty($$self{_debug})->decode($json);
+		$self->{$name} = JSON->new->utf8->pretty($$self{_debug} // 0)->decode($json);
 	};
-	$self->$name = {error => 'failed to parse JSON string', JSON => $json} if $@;
+	$self->{$name} = {error => 'failed to parse JSON string', JSON => $json} if $@;
+	$self->_bless_tree($self->{$name});
 	$self;
 }
 
@@ -568,7 +569,7 @@ call this method to serialize and output a subtree:
 sub serialize
 {
 	my ($self) = @_;
-	JSON->new->utf8->pretty($$self{_debug})->allow_blessed->convert_blessed->encode($self);
+	JSON->new->utf8->pretty($$self{_debug} // 0)->allow_blessed->convert_blessed->encode($self);
 }
 
 sub _bless_tree
@@ -612,7 +613,7 @@ sub AUTOLOAD : lvalue
 	die "illegal key name, must be of ([a-zA-Z][a-zA-Z0-9_]* form\n$AUTOLOAD" unless $key;
 	our $_want;
 	# Want::want will be called only if $_want is true, see want method
-	my $val = $_want && defined $_[0]->{$key} && ref $_[0]->{$key} eq '' && Want::want('REF OBJECT');
+	my $val = $_want && defined $_[0]->{$key} && ref $_[0]->{$key} eq '' && Want::want('SCALAR REF OBJECT');
 	# IMPORTANT NOTE: TRYING TO ASSIGN AN UNDEFINED VALUE TO A KEY WILL RESULT IN NODE CREATION WITH NO LEAFS INSTEAD OF A LEAF WITH UNDEFINED VALUE
 	# null strings are FALSE in Perl!!!
 	$_[0]->{$key} = $_[1] || $_[0]->{$key} // {};
