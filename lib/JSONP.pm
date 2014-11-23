@@ -9,6 +9,8 @@ use v5.8;
 #use Want;
 our $VERSION = '0.87';
 
+=encoding utf8
+
 =head1 NAME
 
 JSONP - a module to build JavaScript Object Notation with Padding web services
@@ -342,11 +344,11 @@ sub sendfile
 
 call this method before to call C<run> to enable debug mode in a test environment, basically this one will output pretty printed JSON instead of "compressed" one. Furthermore with debug mode turned on the content of session will be returned to the calling page in its own json branch. You can pass a switch to this method (that will be parsed as bool) to set it I<on> or I<off>. It could be useful if you want to pass a variable. If no switch (or undefined one) is passed, the switch will be set as true. Example:
 
-    $j->debug->run;
+	$j->debug->run;
 
 is the same as:
 
-    $j->debug(1)->run;
+	$j->debug(1)->run;
 
 =cut
 
@@ -363,20 +365,20 @@ sub debug
 
 this method will enable/disable the import of optional dependency module I<Want> to enable leaf values transformation in node without causing runtime errors. This will get working the following code instead of give a runtime error:
 
-    $j->first = 9;
+	$j->first = 9;
 
-    ... do some things
+	... do some things
 
-    $j->first->second = 9;
-    $j->first->second->third = 'Hi!';
+	$j->first->second = 9;
+	$j->first->second->third = 'Hi!';
 
 this will enable you to discard I<second> leaf value and append to it whatever data structure you like. Please note that the default value for the switch is true, like other ones, so
 
-    $j->want->run;
+	$j->want->run;
 
 is the same as:
 
-    $j->want(1)->run;
+	$j->want(1)->run;
 
 this method is chainable as others are.
 
@@ -602,7 +604,7 @@ sub TO_JSON
 }
 
 # avoid calling AUTOLOAD on destroy
-DESTROY{}
+sub DESTROY{}
 
 sub AUTOLOAD : lvalue
 {
@@ -650,8 +652,6 @@ Remember to always:
 =item 4. use SSL when you are keeping track of sessions
 
 =back
-
-=cut
 
 =head1 HELP and development
 
