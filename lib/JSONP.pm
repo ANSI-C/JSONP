@@ -1,6 +1,7 @@
 package JSONP;
 use strict;
 use warnings;
+use utf8;
 use Time::HiRes qw(gettimeofday);
 use CGI qw(:cgi -utf8);
 use Digest::SHA;
@@ -632,7 +633,7 @@ In order to achieve autovivification notation shortcut, this module does not mak
 
 =head2 MINIMAL REQUIREMENTS
 
-this module requires at least perl 5.8
+this module requires at least perl 5.10 for its usage of "defined or" // operator
 
 =head2 DEPENDENCIES
 
