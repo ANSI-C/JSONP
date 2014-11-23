@@ -7,7 +7,8 @@ use Digest::SHA;
 use JSON;
 use v5.8;
 #use Want;
-our $VERSION = '0.87';
+#
+our $VERSION = '0.89';
 
 =encoding utf8
 
