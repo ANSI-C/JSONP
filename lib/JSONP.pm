@@ -9,7 +9,7 @@ use JSON;
 use v5.10;
 #use Want;
 
-our $VERSION = '0.90';
+our $VERSION = '0.91';
 
 =encoding utf8
 
@@ -196,7 +196,7 @@ class constructor, it does not accept any parameter by user. The options have to
 sub new
 {
 	my ($class) = @_;
-	bless {}, $class;
+	bless {_is_root_element => 1}, $class;
 }
 
 =head3 run
@@ -595,11 +595,18 @@ sub TO_JSON
 	my $self = shift;
 	return 'true'  if ref $self eq 'SCALAR' && $$self == 1;
 	return 'false' if ref $self eq 'SCALAR' && $$self == 0;
-	my $output = {};
-	for(keys %{$self}){
-		next if $_ !~ /^[a-z]/;
-		next if $_ eq 'session' && ! $self->{_debug};
-		next if $_ eq 'params' && ! $self->{_debug};
+	my $output;
+
+	eval {my @test = keys %$self;};
+	if($@){
+		push @$output, $_ for @$self;
+		return $output;
+	}
+
+	for(keys %$self){
+		# next if $_ !~ /^[a-z]/;
+		next if $_ eq 'session' && $self->{_is_root_element} && ! $self->{_debug};
+		next if $_ eq 'params'  && $self->{_is_root_element} && ! $self->{_debug};
 		$output->{$_} = $self->{$_};
 	}
 	return $output;
