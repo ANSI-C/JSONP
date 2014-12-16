@@ -750,10 +750,13 @@ Remember to always:
 the author would be happy to receive suggestions and bug notification. If somebody would like to send code and automated tests for this module, I will be happy to integrate it.
 The code for this module is tracked on this L<GitHub page|https://github.com/ANSI-C/JSONP>.
 
-=head1 LICENSE AND COPYRIGHT
+=head1 LICENSE
+
+This library is free software and is distributed under same terms as Perl itself.
+
+=head1 COPYRIGHT
 
 Copyright 2014-2015 by Anselmo Canfora.
-This library is free software and is distributed under same terms as Perl itself.
 
 =cut
 
