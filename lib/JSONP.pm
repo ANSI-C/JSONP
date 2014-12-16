@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.1';
+our $VERSION = '1.2';
 
 =encoding utf8
 
@@ -679,10 +679,12 @@ sub TO_JSON
 	my $output;
 
 	if(reftype $self eq 'ARRAY'){
+		$output = [];
 		push @$output, $_ for @$self;
 		return $output;
 	}
 
+	$output = {};
 	for(keys %$self){
 		my $skip;
 		my $nodebug = ! $self->{_debug};

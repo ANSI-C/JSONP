@@ -9,7 +9,7 @@ WriteMakefile(
 	LICENSE		=> 'perl_5',
 	ABSTRACT_FROM		=> 'lib/JSONP.pm',
 	AUTHOR			=> 'Anselmo Canfora <acanfora@cpan.org>',
-	MIN_PERL_VERSION	=> 5.10,
+	MIN_PERL_VERSION	=> 5.010,
 	PREREQ_PM		=> {
 		CGI		=> 0,
 		JSON		=> 0,

@@ -1,4 +1,6 @@
 Changes
+JSONP-1.1/META.json
+JSONP-1.1/META.yml
 lib/JSONP.pm
 LICENSE
 Makefile.PL
