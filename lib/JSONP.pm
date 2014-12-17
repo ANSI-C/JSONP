@@ -755,6 +755,7 @@ The code for this module is tracked on this L<GitHub page|https://github.com/ANS
 =head1 LICENSE AND COPYRIGHT
 
 This library is free software and is distributed under the same terms as perl itself.
+
 E<copy> 2014-2015 by Anselmo Canfora.
 
 =cut
