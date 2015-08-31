@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.2';
+our $VERSION = '1.3';
 
 =encoding utf8
 
@@ -253,14 +253,14 @@ sub run
 	# this will enable us to give back the unblessed reference
 	my %params = $r->Vars;
 	$self->params = \%params;
-	my $req = $self->params->req;
-	$req =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $req = $1;
+	my $req = $self->{params}->{req} // '';
+	$req =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $req = $1 // '';
 	my $sid = $r->cookie('sid');
 	my $header = {-type => 'application/javascript', -charset => 'UTF-8'};
 	unless ( $sid ) {
 		my $h = Digest::SHA->new(256);
 		my @us = gettimeofday;
-		$h->add(@us, map($r->http($_) , $r->http() )) if	    $self->{_insecure_session};
+		$h->add(@us, map($r->http($_) , $r->http() )) if	$self->{_insecure_session};
 		$h->add(@us, map($r->https($_), $r->https())) unless	$self->{_insecure_session};
 		$sid = $h->hexdigest;
 		my $current_path = $r->url(-absolute=>1);
@@ -295,10 +295,10 @@ sub run
 		};
 		$self->{eval} = $@ if $self->{_debug};
 		$self->{_aaa_sub}->($sid, $self->session->serialize) if $self->{_authenticated};
-	}
-	else{
+	} elsif (! $req) {
+		$self->error('invalid request');
+	} else {
 		$self->error('forbidden');
-		$self->{_authenticated} = 0;
 	}
 
 	# give a nice JSON "true"/"false" output for authentication
@@ -306,17 +306,23 @@ sub run
 
 	unless($self->{_passthrough}){
 		print $r->header($header);
-		my $callback = $self->params->callback || 'callback';
-		print "$callback(" unless $self->{_plain_json};
+		my $callback = $self->{params}->{callback} // '';
+		if($callback){
+			$callback =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $callback = $1 // '';
+			$self->error('invalid callback') unless $callback;
+		}
+		print "$callback(" if  $callback;
 		print $self->serialize;
-		print ')' unless $self->{_plain_json};
+		print ')' if $callback;
 	} else {
 		$header->{'-type'} = $self->{_mimetype};
-		print $r->header($header);
 		if($self->{_html}){
+			print $r->header($header);
 			print $self->{_html};
 		} else {
-			$header->{'-type'} = $self->{_mimetype};
+			$self->{_sendfile} =~ /([^\/]+)$/;
+			$header->{'-attachment'} = $1;
+			print $r->header($header);
 			print $self->_slurp($self->{_sendfile});
 		}
 	}
@@ -438,6 +444,7 @@ sub query
 
 =head3 plain_json
 
+B<this function is deprecated and has no effect anymore, now a plain JSON request will be returned if no I<callback> parameter will be provided.>
 call this function to enable output in simple JSON format (not enclosed within jquery_callback_name()... ). Do this only when your script is on the same domain of static content. This method can be useful also during testing of your application. You can pass a switch to this method (that will parsed as bool) to set it on or off. It could be useful if you want to pass a variable. If no switch (or undefined one) is passed, the switch will be set as true. 
 
 =cut
@@ -752,11 +759,13 @@ Remember to always:
 the author would be happy to receive suggestions and bug notification. If somebody would like to send code and automated tests for this module, I will be happy to integrate it.
 The code for this module is tracked on this L<GitHub page|https://github.com/ANSI-C/JSONP>.
 
-=head1 LICENSE AND COPYRIGHT
+=head1 LICENSE
 
-This library is free software and is distributed under the same terms as perl itself.
+This library is free software and is distributed under same terms as Perl itself.
 
-E<copy> 2014-2015 by Anselmo Canfora.
+=head1 COPYRIGHT
+
+Copyright 2014-2015 by Anselmo Canfora.
 
 =cut
 

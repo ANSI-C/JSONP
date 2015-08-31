@@ -1,5 +1,10 @@
 Revision history for Perl extension JSONP.
 
+1.3
+	- fixed bug: Content-Disposition was not correctly set on file download
+	- fixed bug: null req parameter no longer cause a runtime error, a nice error message is returned instead
+	- plain_json method is now deprecated, JSONP will behave automatically accordingly with callback parameter existence in request query
+
 1.2
 	- fix of a bug converting void arrays in null on serialization to json
 
