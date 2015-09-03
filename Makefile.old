@@ -18,7 +18,7 @@
 #     LICENSE => q[perl_5]
 #     MIN_PERL_VERSION => q[5.01]
 #     NAME => q[JSONP]
-#     PREREQ_PM => { Scalar::Util=>q[0], Want=>q[0], JSON=>q[0], Time::HiRes=>q[0], Digest::SHA=>q[0], CGI=>q[0] }
+#     PREREQ_PM => { JSON=>q[0], Want=>q[0], Time::HiRes=>q[0], Scalar::Util=>q[0], Digest::SHA=>q[0], CGI=>q[0] }
 #     TEST_REQUIRES => {  }
 #     VERSION_FROM => q[lib/JSONP.pm]
 
@@ -59,11 +59,11 @@ DIRFILESEP = /
 DFSEP = $(DIRFILESEP)
 NAME = JSONP
 NAME_SYM = JSONP
-VERSION = 1.3
+VERSION = 1.3.1
 VERSION_MACRO = VERSION
-VERSION_SYM = 1_3
+VERSION_SYM = 1_3_1
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 1.3
+XS_VERSION = 1.3.1
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -257,7 +257,7 @@ RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
 DISTNAME = JSONP
-DISTVNAME = JSONP-1.3
+DISTVNAME = JSONP-1.3.1
 
 
 # --- MakeMaker macro section:
@@ -440,22 +440,22 @@ clean_subdirs :
 
 clean :: clean_subdirs
 	- $(RM_F) \
-	  core.*perl.*.? perl$(EXE_EXT) \
-	  $(BASEEXT).x *$(OBJ_EXT) \
-	  $(BOOTSTRAP) perlmain.c \
-	  $(INST_ARCHAUTODIR)/extralibs.all lib$(BASEEXT).def \
-	  tmon.out perl \
-	  core MYMETA.yml \
-	  *perl.core core.[0-9][0-9][0-9] \
-	  core.[0-9][0-9][0-9][0-9] perl.exe \
-	  pm_to_blib.ts $(BASEEXT).def \
-	  MYMETA.json core.[0-9][0-9] \
-	  core.[0-9] $(BASEEXT).exp \
-	  core.[0-9][0-9][0-9][0-9][0-9] pm_to_blib \
-	  mon.out blibdirs.ts \
-	  *$(LIB_EXT) $(MAKE_APERL_FILE) \
-	  so_locations $(INST_ARCHAUTODIR)/extralibs.ld \
-	  $(BASEEXT).bso 
+	  perl core.[0-9][0-9] \
+	  $(BASEEXT).bso core.[0-9][0-9][0-9][0-9][0-9] \
+	  $(INST_ARCHAUTODIR)/extralibs.ld $(BASEEXT).exp \
+	  mon.out core.[0-9][0-9][0-9][0-9] \
+	  core.[0-9][0-9][0-9] $(BASEEXT).x \
+	  tmon.out lib$(BASEEXT).def \
+	  perl$(EXE_EXT) perlmain.c \
+	  $(MAKE_APERL_FILE) MYMETA.yml \
+	  blibdirs.ts *perl.core \
+	  pm_to_blib $(INST_ARCHAUTODIR)/extralibs.all \
+	  core core.*perl.*.? \
+	  *$(OBJ_EXT) $(BOOTSTRAP) \
+	  perl.exe *$(LIB_EXT) \
+	  $(BASEEXT).def core.[0-9] \
+	  pm_to_blib.ts MYMETA.json \
+	  so_locations 
 	- $(RM_RF) \
 	  blib 
 	- $(MV) $(FIRST_MAKEFILE) $(MAKEFILE_OLD) $(DEV_NULL)
@@ -470,7 +470,7 @@ realclean_subdirs :
 # Delete temporary files (via clean) and also delete dist files
 realclean purge ::  clean realclean_subdirs
 	- $(RM_F) \
-	  $(FIRST_MAKEFILE) $(MAKEFILE_OLD) 
+	  $(MAKEFILE_OLD) $(FIRST_MAKEFILE) 
 	- $(RM_RF) \
 	  $(DISTVNAME) 
 
@@ -505,7 +505,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '  Time::HiRes: 0' >> META_new.yml
 	$(NOECHO) $(ECHO) '  Want: 0' >> META_new.yml
 	$(NOECHO) $(ECHO) '  perl: 5.01' >> META_new.yml
-	$(NOECHO) $(ECHO) 'version: 1.3' >> META_new.yml
+	$(NOECHO) $(ECHO) 'version: v1.3.1' >> META_new.yml
 	-$(NOECHO) $(MV) META_new.yml $(DISTVNAME)/META.yml
 	$(NOECHO) $(ECHO) Generating META.json
 	$(NOECHO) $(ECHO) '{' > META_new.json
@@ -553,7 +553,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '      }' >> META_new.json
 	$(NOECHO) $(ECHO) '   },' >> META_new.json
 	$(NOECHO) $(ECHO) '   "release_status" : "stable",' >> META_new.json
-	$(NOECHO) $(ECHO) '   "version" : "1.3"' >> META_new.json
+	$(NOECHO) $(ECHO) '   "version" : "v1.3.1"' >> META_new.json
 	$(NOECHO) $(ECHO) '}' >> META_new.json
 	-$(NOECHO) $(MV) META_new.json $(DISTVNAME)/META.json
 

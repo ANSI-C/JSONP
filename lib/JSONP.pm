@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.3';
+our $VERSION = '1.3.1';
 
 =encoding utf8
 
@@ -305,12 +305,15 @@ sub run
 	$self->authenticated = $self->{_authenticated} ? \1 : \0;
 
 	unless($self->{_passthrough}){
-		print $r->header($header);
 		my $callback = $self->{params}->{callback} // '';
 		if($callback){
-			$callback =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $callback = $1 // '';
+			$callback = $callback =~ /^([a-z][0-9a-zA-Z_]{1,63})$/ ? $1 : '';
 			$self->error('invalid callback') unless $callback;
 		}
+
+		$self->{_mimetype} = $callback ? 'application/javascript' : 'application/json';
+		$header->{'-type'} = $self->{_mimetype};
+		print $r->header($header);
 		print "$callback(" if  $callback;
 		print $self->serialize;
 		print ')' if $callback;
@@ -320,8 +323,7 @@ sub run
 			print $r->header($header);
 			print $self->{_html};
 		} else {
-			$self->{_sendfile} =~ /([^\/]+)$/;
-			$header->{'-attachment'} = $1;
+			$header->{'-attachment'} = $self->{_sendfile} =~ /([^\/]+)$/ ? $1 : '';
 			print $r->header($header);
 			print $self->_slurp($self->{_sendfile});
 		}
