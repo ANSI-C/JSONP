@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.31';
+our $VERSION = '1.4';
 
 =encoding utf8
 
@@ -67,6 +67,7 @@ You must declare the instance variable, remember to use I<local our>.
 
 	sub yoursubname
 	{
+		my $namedparam = $j->params->namedparam; 
 		$j->table->fields = $sh->{NAME};
 		$j->table->data = $sh->fetchall_arrayref;
 	}
@@ -81,6 +82,7 @@ option setting methods allow for chained calls:
 
 	sub yoursubname
 	{
+		my $namedparam = $j->params->namedparam; 
 		$j->table->fields = $sh->{NAME};
 		$j->table->data = $sh->fetchall_arrayref;
 	}
@@ -197,8 +199,15 @@ this will enable you to discard I<second> leaf value and append to it whatever d
 
 =head1 DESCRIPTION
 
-The purpose of JSONP is to give an easy and fast way to build JSON only web services that can be used even from a different domain from which one they are hosted on. It is supplied only the object interface: this module does not export any symbol, apart the optional pointer to its own instance in the CGI environment.
+The purpose of JSONP is to give an easy and fast way to build JSON only web services that can be used even from a different domain from which one they are hosted on. It is supplied only the object interface: this module does not export any symbol, apart the optional pointer to its own instance in the CGI environment (not possible in mod_perl environment).
 Once you have the instance of JSONP, you can build a response hash tree, containing whatever data structure, that will be automatically sent back as JSON object to the calling page. The built-in automatic cookie session keeping uses a secure SHA256 to build the session key. The related cookie is HttpOnly, Secure (only SSL) and with path set way down the one of current script (keep the authentication script in the root of your scripts path to share session among all scripts). For high trusted intranet environments a method to disable the Secure flag has been supplied. The automatically built cookie key will be long exactly 64 chars (hex format). 
+You can retrieve parameters supplied from browser either via GET, POST, PUT, or DELETE by accessing the reserved I<params> key of JSONP object. For example the value of a parameter named I<test> will be accessed via $j->params->test. It is better to check the existance of expected parameters before to access them:
+
+	if(exists $j->params->{test}){ # note the braces on actual parameter name for exists function to work
+		$testparam = $j->params->test;
+	}
+
+otherwise I<$testparam> will end to be a void hash reference because of autovivification feature of JSONP. In case of POSTs or PUTs of application/json requests (JSONP application/javascript requests are always loaded as GETs) the JSONP module will transparently detect them and populate the I<params> key with the deserialization of posted JSON, note that in this case the JSON being P(OS|U)Ted must be an object and not an array, having a I<req> param key on the first level of the structure in order to point out the corresponding function to be invoked.
 You have to provide the string name or sub ref (the module accepts either way) of your own I<aaa> and I<login> functions. The AAA (aaa) function will get called upon every request with the session key (retrieved from session cookie or newly created for brand new sessions) as argument. That way you will be free to implement routines for authentication, authorization, access, and session tracking that most suit your needs, together with rules for user/groups to access the methods you expose. Your AAA function must return the session string (if you previously saved it, read on) if a valid session exists under the given key. A return value evaluated as false by perl will result in a 'forbidden' response (you can add as much errors as you want in the I<errors> array of response object). B<Be sure you return a false value if the user is not authenticated!> otherwise you will give access to all users. If you want you can check the invoked method under the req parameter (see query method) in order to implement your own access policies. The AAA function will be called a second time just before the response to client will be sent out, with the session key as first argument, and a serialized string of the B<session> branch as second (as you would have modified it inside your called function). This way if your AAA function gets called with only one paramenter it is the begin of the request cycle, and you have to retrieve and check the session saved in your storage of chose (memcached, database, whatever), if it gets called with two arguments you can save the updated session object (already serialized as UTF-8 JSON) to the storage under the given key. The B<session> key of JSONP object will be reserved for session tracking, everything you will save in that branch will be passed serialized to your AAA function right before the response to client. It will be also populated after the serialized string you will return from your AAA function at the beginning of the cycle. The login function will get called with the current session key (from cookie or newly created) as parameter, you can retrieve the username and password passed by the query method, as all other parameters. This way you will be free to give whatever name you like to those two parameters. Return the outcome of login attempt in order to pass back to login javascript call the state of authentication. Whatever value that evaluates to true will be seen as "authentication ok", whatever value that Perl evaluates to false will be seen as "authentication failed". Subsequent calls (after authentication) will track the authentication status by mean of the session string you return from AAA function.
 So if you need to add a method/call/feature to your application you have only to add a sub with same name you will pass under I<req> parameter.
 
@@ -252,7 +261,27 @@ sub run
 	my $r = CGI->new;
 	# this will enable us to give back the unblessed reference
 	my %params = $r->Vars;
-	$self->params = \%params;
+	my $contype = $r->content_type;
+	my $method  = $r->request_method;
+	if($contype eq 'application/json' && scalar keys %params == 1){
+		my $payload;
+		if($method eq 'POST'){
+			$payload = $params{POSTDATA};
+		} elsif ($method eq 'PUT'){
+			$payload = $params{PUTDATA};
+		} else {
+			$payload = '{}'; # dummy one, fallback for invalid requests
+		}
+
+		my $success = $self->graft('params', $payload);
+
+		unless($success){
+			$self->error('invalid input JSON');
+		}
+
+	} else {
+		$self->params = \%params;
+	}
 	my $req = $self->{params}->{req} // '';
 	$req =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $req = $1 // '';
 	my $sid = $r->cookie('sid');
