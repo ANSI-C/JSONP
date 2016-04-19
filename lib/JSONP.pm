@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.4';
+our $VERSION = '1.4.1';
 
 =encoding utf8
 
@@ -282,6 +282,12 @@ sub run
 	} else {
 		$self->params = \%params;
 	}
+
+	unless(reftype $self->params eq 'HASH'){
+		$self->params = {};
+		$self->error('invalid input JSON type (array)');
+	}
+
 	my $req = $self->{params}->{req} // '';
 	$req =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $req = $1 // '';
 	my $sid = $r->cookie('sid');

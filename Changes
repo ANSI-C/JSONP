@@ -1,5 +1,9 @@
 Revision history for Perl extension JSONP.
 
+1.4.1
+
+	- the module now returns correctly a meaningful error when submitted JSON (with application/json mimetype) is of an array type
+
 1.4
 
 	- added transparent support for POSTs and PUTs of application/json or application/javascript type
