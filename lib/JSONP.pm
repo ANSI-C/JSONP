@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.4.1';
+our $VERSION = '1.4.2';
 
 =encoding utf8
 
@@ -291,8 +291,22 @@ sub run
 	my $req = $self->{params}->{req} // '';
 	$req =~ /^([a-z][0-9a-zA-Z_]{1,31})$/; $req = $1 // '';
 	my $sid = $r->cookie('sid');
+
+	my $map = caller() . '::' . $req;
+	my $session = $self->{_aaa_sub}->($sid);
+	$self->{_authenticated} = ! ! $session;
+	if($self->{_authenticated}){
+		$self->graft('session', $session)
+	} else {
+		$self->session = {};
+	}
+
+	$$self{_cgi} = $r;
+
+	my $isloginsub = \&$map == $self->{_login_sub};
+
 	my $header = {-type => 'application/javascript', -charset => 'UTF-8'};
-	unless ( $sid ) {
+	unless ( $sid && !$isloginsub) {
 		my $h = Digest::SHA->new(256);
 		my @us = gettimeofday;
 		$h->add(@us, map($r->http($_) , $r->http() )) if	$self->{_insecure_session};
@@ -311,22 +325,11 @@ sub run
 		$header->{-cookie} = $r->cookie($cookie); 
 	}
 
-	my $map = caller() . '::' . $req;
-	my $session = $self->{_aaa_sub}->($sid);
-	$self->{_authenticated} = ! ! $session;
-	if($self->{_authenticated}){
-		$self->graft('session', $session)
-	} else {
-		$self->session = {};
-	}
-
-	$$self{_cgi} = $r;
-
-	if (! ! $session && defined &$map || \&$map == $self->{_login_sub}) {
+	if (! ! $session && defined &$map || $isloginsub) {
 		eval {
 			no strict 'refs';
 			my $outcome = &$map($sid);
-			$self->{_authenticated} = $outcome if \&$map == $self->{_login_sub};
+			$self->{_authenticated} = $outcome if $isloginsub;
 		};
 		$self->{eval} = $@ if $self->{_debug};
 		$self->{_aaa_sub}->($sid, $self->session->serialize) if $self->{_authenticated};
@@ -749,9 +752,29 @@ sub DESTROY{}
 
 sub AUTOLOAD : lvalue
 {
+	#my @types = (
+	#	'VOID',
+	#	'SCALAR',
+	#	'REF',
+	#	'REFSCALAR',
+	#	'CODE',
+	#	'HASH',
+	#	'ARRAY',
+	#	'GLOB',
+	#	'OBJECT',
+	#	'BOOL',
+	#	'LIST',
+	#	'COUNT',
+	#	'LVALUE',
+	#	'ASSIGN',
+	#	'RVALUE',
+	#);
 	my $classname =  ref $_[0];
 	our $AUTOLOAD =~ /^${classname}::([a-zA-Z][a-zA-Z0-9_]*)$/;
 	my $key = $1;
+	#say STDERR $key;
+	#say STDERR "$_ : ", !! want($_) for @types;
+	#say STDERR '_______________';
 	die "illegal key name, must be of [a-zA-Z][a-zA-Z0-9_]* form\n$AUTOLOAD" unless $key;
 	my $val = defined $_[0]->{$key} && ref $_[0]->{$key} eq '' && Want::want('SCALAR REF OBJECT');
 	# IMPORTANT NOTE: TRYING TO ASSIGN AN UNDEFINED VALUE TO A KEY WILL RESULT IN NODE CREATION WITH NO LEAFS INSTEAD OF A LEAF WITH UNDEFINED VALUE
