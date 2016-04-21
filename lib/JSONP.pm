@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.4.2';
+our $VERSION = '1.5';
 
 =encoding utf8
 
@@ -164,7 +164,7 @@ You can delete elements from the hash tree, though it is not supported via the c
 
 TODO: will investigate if possible to implement deletion using exclusively the convenience notation feature.
 
-IMPORTANT NOTE: while using the convenience notation without braces you B<must> B<never> pass B<I<undef>>ined values, because this will result in creation of a node instead of a leaf as intended.
+IMPORTANT NOTE: while using the convenience notation without braces, if you autovivify a hierarchy without assigning anything to the last item, or assigning it an B<I<undef>>ined value, JSONP will assign to the last element a zero string ( '' ). Since it evaluates to false in a boolean context and can be safely catenated to other strings without causing runtime errors you can avoid several I<exists> checks without the risk to incur in runtime errors. The only dangerous tree traversal can occur if you try to treat an object node as an array node, or vice versa.
 
 IMPORTANT NOTE 2: remember that all the method names of the module cannot be used as key names via convenience notation feature, at any level of the response tree. You can set such key names anyway by using the braces notation. To retrieve their value, you will need to use the brace notation for the node that has the key equal to a native method name of this very module. It is advisable to assign the branch that contains them to an higher level node:
 
@@ -261,7 +261,7 @@ sub run
 	my $r = CGI->new;
 	# this will enable us to give back the unblessed reference
 	my %params = $r->Vars;
-	my $contype = $r->content_type;
+	my $contype = $r->content_type // '';
 	my $method  = $r->request_method;
 	if($contype eq 'application/json' && scalar keys %params == 1){
 		my $payload;
@@ -752,35 +752,13 @@ sub DESTROY{}
 
 sub AUTOLOAD : lvalue
 {
-	#my @types = (
-	#	'VOID',
-	#	'SCALAR',
-	#	'REF',
-	#	'REFSCALAR',
-	#	'CODE',
-	#	'HASH',
-	#	'ARRAY',
-	#	'GLOB',
-	#	'OBJECT',
-	#	'BOOL',
-	#	'LIST',
-	#	'COUNT',
-	#	'LVALUE',
-	#	'ASSIGN',
-	#	'RVALUE',
-	#);
 	my $classname =  ref $_[0];
 	our $AUTOLOAD =~ /^${classname}::([a-zA-Z][a-zA-Z0-9_]*)$/;
 	my $key = $1;
-	#say STDERR $key;
-	#say STDERR "$_ : ", !! want($_) for @types;
-	#say STDERR '_______________';
 	die "illegal key name, must be of [a-zA-Z][a-zA-Z0-9_]* form\n$AUTOLOAD" unless $key;
-	my $val = defined $_[0]->{$key} && ref $_[0]->{$key} eq '' && Want::want('SCALAR REF OBJECT');
-	# IMPORTANT NOTE: TRYING TO ASSIGN AN UNDEFINED VALUE TO A KEY WILL RESULT IN NODE CREATION WITH NO LEAFS INSTEAD OF A LEAF WITH UNDEFINED VALUE
-	$_[0]->{$key} = $_[1] // $_[0]->{$key} // {};
+	my $retval = Want::want('REF OBJECT') ? {} : '';
+	$_[0]->{$key} = $_[1] // $_[0]->{$key} // $retval;
 	$_[0]->_bless_tree($_[0]->{$key}) if ref $_[0]->{$key} eq 'HASH' || ref $_[0]->{$key} eq 'ARRAY';
-	$_[0]->{$key} = bless {}, $classname if $val;
 	$_[0]->{$key};
 }
 
