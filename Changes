@@ -1,6 +1,6 @@
 Revision history for Perl extension JSONP.
 
-1.5.1
+1.5.2
 
 	- explicitly ignore callback values when call isn't a GET
 
