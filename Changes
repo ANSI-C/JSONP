@@ -1,5 +1,9 @@
 Revision history for Perl extension JSONP.
 
+1.5.1
+
+	- explicitly ignore callback values when call isn't a GET
+
 1.5
 
 	- now autovivification a tree with the convenience feature and passing an undef to last element makes it a zero length string instead of a reference to a void hash

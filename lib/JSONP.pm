@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.5';
+our $VERSION = '1.5.1';
 
 =encoding utf8
 
@@ -263,6 +263,7 @@ sub run
 	my %params = $r->Vars;
 	my $contype = $r->content_type // '';
 	my $method  = $r->request_method;
+	$self->{_no_callback} = 1 unless $method eq 'GET';
 	if($contype eq 'application/json' && scalar keys %params == 1){
 		my $payload;
 		if($method eq 'POST'){
@@ -342,8 +343,9 @@ sub run
 	# give a nice JSON "true"/"false" output for authentication
 	$self->authenticated = $self->{_authenticated} ? \1 : \0;
 
-	unless($self->{_passthrough}){
-		my $callback = $self->{params}->{callback} // '';
+	$self->{_no_callback} = 1 if $self->{_passthrough};
+	unless($self->{_no_callback}){
+		my $callback = $self->params->callback;
 		if($callback){
 			$callback = $callback =~ /^([a-z][0-9a-zA-Z_]{1,63})$/ ? $1 : '';
 			$self->error('invalid callback') unless $callback;
