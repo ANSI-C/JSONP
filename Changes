@@ -1,5 +1,9 @@
 Revision history for Perl extension JSONP.
 
+1.53
+
+	- fix bug about method having the same name of object property
+
 1.5.2
 
 	- explicitly ignore callback values when call isn't a GET
