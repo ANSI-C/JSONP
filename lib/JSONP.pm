@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.5.2';
+our $VERSION = '1.53';
 
 =encoding utf8
 
@@ -577,6 +577,7 @@ call this method in order to return an error message to the calling page. You ca
 sub error
 {
 	my ($self, $message) = @_;
+	return $self->{error} unless $message;
 	$self->{error} = \1;
 	push @{$self->{errors}}, $message;
 	$self;
