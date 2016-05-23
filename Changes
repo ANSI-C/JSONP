@@ -1,5 +1,9 @@
 Revision history for Perl extension JSONP.
 
+1.55
+
+	- renamed clashing error method with raiseError, addition of module version property in debug mode
+
 1.53
 
 	- fix bug about method having the same name of object property

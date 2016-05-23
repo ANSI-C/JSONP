@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.53';
+our $VERSION = '1.55';
 
 =encoding utf8
 
@@ -256,6 +256,7 @@ sub run
 	$self->{_mimetype} = 'text/html';
 	$self->{_html} = 0;
 	$self->{_mod_perl} = defined $ENV{MOD_PERL};
+	$self->{_jsonp_version} = $VERSION;
 	#$ENV{PATH} = '' if $self->{_taint_mode} = ${^TAINT};
 	die "you have to provide an AAA function" unless $self->{_aaa_sub};
 	my $r = CGI->new;
@@ -277,7 +278,7 @@ sub run
 		my $success = $self->graft('params', $payload);
 
 		unless($success){
-			$self->error('invalid input JSON');
+			$self->raiseError('invalid input JSON');
 		}
 
 	} else {
@@ -286,7 +287,7 @@ sub run
 
 	unless(reftype $self->params eq 'HASH'){
 		$self->params = {};
-		$self->error('invalid input JSON type (array)');
+		$self->raiseError('invalid input JSON type (array)');
 	}
 
 	my $req = $self->{params}->{req} // '';
@@ -335,9 +336,9 @@ sub run
 		$self->{eval} = $@ if $self->{_debug};
 		$self->{_aaa_sub}->($sid, $self->session->serialize) if $self->{_authenticated};
 	} elsif (! $req) {
-		$self->error('invalid request');
+		$self->raiseError('invalid request');
 	} else {
-		$self->error('forbidden');
+		$self->raiseError('forbidden');
 	}
 
 	# give a nice JSON "true"/"false" output for authentication
@@ -347,7 +348,7 @@ sub run
 		my $callback = $self->params->callback if $self->{_request_method} eq 'GET';
 		if($callback){
 			$callback = $callback =~ /^([a-z][0-9a-zA-Z_]{1,63})$/ ? $1 : '';
-			$self->error('invalid callback') unless $callback;
+			$self->raiseError('invalid callback') unless $callback;
 		}
 
 		$self->{_mimetype} = $callback ? 'application/javascript' : 'application/json';
@@ -568,16 +569,15 @@ sub logout
 	$self;
 }
 
-=head3 error
+=head3 raiseError
 
 call this method in order to return an error message to the calling page. You can add as much messages you want, calling the method several times, it will be returned an array of messages to the calling page.
 
 =cut
 
-sub error
+sub raiseError
 {
 	my ($self, $message) = @_;
-	return $self->{error} unless $message;
 	$self->{error} = \1;
 	push @{$self->{errors}}, $message;
 	$self;
