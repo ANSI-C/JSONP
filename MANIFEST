@@ -1,6 +1,4 @@
-buildSteps.txt
 Changes
-JSONP-1.53.tar.gz
 lib/JSONP.pm
 LICENSE
 Makefile.PL
