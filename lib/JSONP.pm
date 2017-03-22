@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.55';
+our $VERSION = '1.60';
 
 =encoding utf8
 
@@ -265,7 +265,7 @@ sub run
 	my $contype = $r->content_type // '';
 	my $method  = $r->request_method;
 	$self->{_request_method} = $method;
-	if($contype eq 'application/json' && scalar keys %params == 1){
+	if($contype =~ m{application/json} && scalar keys %params == 1){
 		my $payload;
 		if($method eq 'POST'){
 			$payload = $params{POSTDATA};
@@ -333,7 +333,10 @@ sub run
 			my $outcome = &$map($sid);
 			$self->{_authenticated} = $outcome if $isloginsub;
 		};
-		$self->{eval} = $@ if $self->{_debug};
+		if($@){
+			$self->{eval} = $@ if $self->{_debug};
+			$self->raiseError('unclassified error');
+		}
 		$self->{_aaa_sub}->($sid, $self->session->serialize) if $self->{_authenticated};
 	} elsif (! $req) {
 		$self->raiseError('invalid request');
@@ -414,10 +417,7 @@ sub sendfile
 {
 	my ($self, $filepath) = @_;
 	$self->{_passthrough} = 1;
-	# TODO move to File::Type module later on
-	my $mimetype = qx{file --mime-type -b $filepath};
-	chomp $mimetype;
-	$self->{_mimetype} = $mimetype;
+	$self->{_mimetype} = 'application/octet-stream';
 	$self->{_sendfile} = $filepath;
 	$self;
 }
@@ -701,7 +701,12 @@ for now the module does assume that nodes/leafs will be scalars/hashes/arrays, s
 sub serialize
 {
 	my ($self) = @_;
-	JSON->new->utf8->pretty($$self{_debug} // 0)->allow_blessed->convert_blessed->encode($self);
+	my $out;
+	eval{
+		$out = JSON->new->utf8->pretty($$self{_debug} // 0)->allow_blessed->convert_blessed->encode($self);
+	};
+	
+	$out = $@ ? 'invalid JSON' : $out;
 }
 
 sub _bless_tree
@@ -755,11 +760,15 @@ sub DESTROY{}
 sub AUTOLOAD : lvalue
 {
 	my $classname =  ref $_[0];
-	our $AUTOLOAD =~ /^${classname}::([a-zA-Z][a-zA-Z0-9_]*)$/;
+	my $validname = '[a-zA-Z][a-zA-Z0-9_]*'; 
+	our $AUTOLOAD =~ /^${classname}::($validname)$/;
 	my $key = $1;
-	die "illegal key name, must be of [a-zA-Z][a-zA-Z0-9_]* form\n$AUTOLOAD" unless $key;
-	my $retval = Want::want('REF OBJECT') ? {} : '';
-	$_[0]->{$key} = $_[1] // $_[0]->{$key} // $retval;
+	die "illegal key name, must be of $validname form\n$AUTOLOAD" unless $key;
+	my $miss = Want::want('REF OBJECT') ? {} : '';
+	my $retval = $_[0]->{$key};
+	my $isBool = Want::want('SCALAR BOOL') && ((reftype($retval) // '') eq 'SCALAR');
+	$retval = $$retval if $isBool;
+	$_[0]->{$key} = $_[1] // $retval // $miss;
 	$_[0]->_bless_tree($_[0]->{$key}) if ref $_[0]->{$key} eq 'HASH' || ref $_[0]->{$key} eq 'ARRAY';
 	$_[0]->{$key};
 }
