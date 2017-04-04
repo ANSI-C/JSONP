@@ -1,12 +1,19 @@
 Revision history for Perl extension JSONP.
 
+1.61
+
+	- fixed a bug preventing replacement of a leaf with a new node
+	- introduction of pretty method call
+	- updated changelog and POD documentation
+	- addition of first battery of tests
+
 1.60
 
-	- now detecting boolean context, if so deserialized JSON booleans ( \1 and \0 ) are recognized and can be used directly in conditionals without dereferencing
-	- application/json content type now always recognized
-	- now returning "unclassified error" to frontend if sandboxed evalation crashes, in debug mode will return also error returned from eval
-	- now downloadable files mime type will always be set to application/octet-stream to avoid any problem
-	- JSON serialization routine now put inside an eval to prevent any crash due to corrupted/invalid text encoding in Perl data structures
+	- now detecting boolean context, within it the deserialized JSON booleans ( \1 and \0 ) are recognized and can be used directly in conditionals without need to dereference them
+	- application/json content type now always recognized in POSTs and PUTs
+	- now returning "unclassified error" to frontend if sandboxed evalation crashes, in debug mode the eval error string will also be returned
+	- now mime type of downloadable files will always be set to application/octet-stream instead of specific detected type
+	- JSON serialization routine has been put inside an eval to prevent any crash due to corrupted/invalid UTF-8 text encoding in Perl data structures
 
 1.55
 

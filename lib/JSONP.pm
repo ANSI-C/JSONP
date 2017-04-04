@@ -12,13 +12,13 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.60';
+our $VERSION = '1.61';
 
 =encoding utf8
 
 =head1 NAME
 
-JSONP - a module to build JavaScript Object Notation with Padding web services
+JSONP - a module to quickly build JSON/JSONP web services
 
 =head1 SYNOPSIS
 
@@ -91,7 +91,7 @@ just make sure I<run> it is the last element in chain.
 
 =back
 
-the module will call automatically the sub which name is specified in the req parameter of GET/POST request. JSONP will check if the sub exists in current script namespace by looking in typeglob and only in that case the sub will be called. The built-in policy about function names requires also a name starting by a lowercase letter, followed by up to 31 characters chosen between letters, numbers, and underscores. Since this module is intended to be used by AJAX calls, this will spare you to define routes and mappings between requests and back end code. In your subroutines you will therefore add all the data you want to the JSONP object instance in form of hashmap of any deep and complexity, JSONP will return that data automatically as JSON object with padding (by using the function name passed as 'callback' in GET/POST request, or using simply 'callback' as default) to the calling javascript. Please note that I<params> and I<session> keys on top of JSONP object hierarchy are reserved. See also "I<notation convenience features>" paragraph at the end of the POD.
+the module will call automatically the sub which name is specified in the req parameter of GET/POST request. JSONP will check if the sub exists in current script namespace by looking in typeglob and only in that case the sub will be called. The built-in policy about function names requires also a name starting by a lowercase letter, followed by up to 31 characters chosen between letters, numbers, and underscores. Since this module is intended to be used by AJAX calls, this will spare you to define routes and mappings between requests and back end code. In your subroutines you will therefore add all the data you want to the JSON/JSONP object instance in form of hashmap of any deep and complexity, JSONP will return that data automatically as JSON object with/without padding (by using the function name passed as 'callback' in GET/POST request, or using simply 'callback' as default) to the calling javascript. Please note that I<params> and I<session> keys on top of JSONP object hierarchy are reserved. See also "I<notation convenience features>" paragraph at the end of the POD.
 The jQuery call:
 
 	// note that jQuery will automatically chose a non-clashing callback name when you insert callback=? in request
@@ -153,8 +153,7 @@ you can insert also array at any level of structure  and the nodes (hashrefs) wi
 	$jsonp->first->second->[0]->a = 9;
 	print $jsonp->first->second->[0]->a; # will print 9 now
 
-you can almost freely interleave above listed styles in order to access to elements of JSONP object. As usual, respect I<_private> variables if you don't know what you are doing. One value-leaf/object-node element set by the convenience notation shortcut will be read by normal hash access syntax, be aware that if you set a node/leaf with the traditional syntax, elements deeper that first one cannot be read via the convenience arrow-only feature. So it is a good practice to always use the convenience feature unless you have very specific needs and know and understand what you are doing.
-You can delete elements from the hash tree, though it is not supported via the convenience notation. You can use it, but the last node has to be referenced via braces notation:
+you can almost freely interleave above listed styles in order to access to elements of JSONP object. As usual, respect I<_private> variables if you don't know what you are doing. One value-leaf/object-node element set by the convenience notation shortcut will be read by normal hash access syntax. You can delete elements from the hash tree, though it is not supported via the convenience notation. You can use it, but the last node has to be referenced via braces notation:
 
 	my $j = JSONP->new;
 	$j->firstnode->a = 5;
@@ -176,7 +175,15 @@ IMPORTANT NOTE 2: remember that all the method names of the module cannot be use
 	$j->secondnode = $branch; # $branch structure will be grafted and relative nodes blessed accordingly
 	say $j->secondnode->{serialize}; # will print 1
 
-NOTE: in order to get a "pretty print" via serialize method you will need to call debug before serialize, if you want to serialize a deeper branch than the root one:
+IMPORTANT NOTE 3: deserialized booleans from JSON are turned into referenes to scalars by JSON module, to say JSON I<true> will turn into a Perl I<\1> and JSON I<false> will turn into a Perl I<\0>. JSONP module detects boolen context so when you try to evaluate one of these values in a boolean context it correctly returns the actual boolean value hold by the leaf instead of the reference (that would always evaluate to I<true> even for I<\0>), to say will dereference I<\0> and I<\1> in order to return I<0> and I<1> respectively.
+
+        $j->graft('testbool', q|{"true": true, "false":false}|);
+        say $j->testbool->true;
+        say $j->testbool->false;
+        say !! $j->testbool->true;
+        say !! $j->testbool->false;
+
+NOTE: in order to get a "pretty print" via serialize method you will need to either call I<debug> or I<pretty> methods before serialize, if you want to serialize a deeper branch than the root one:
 
 	my $j = JSONP->new->debug;
         $j->firstnode->a = 5;
@@ -184,7 +191,7 @@ NOTE: in order to get a "pretty print" via serialize method you will need to cal
         $j->secondnode->thirdnode->a = 7;
 	my $pretty = $j->serialize; # will get a pretty print
 	my $deepser = $j->firstnode->serialize; # won't get a pretty print, because deeper than root
-	my $prettydeepser = $j->firstnode->debug->serialize; # will get a pretty print, becuase we called debug first
+	my $prettydeeper = $j->firstnode->pretty->serialize; # will get a pretty print, because we called I<pretty> first
 
 NOTE: you can even replace a leaf with a new node:
 
@@ -199,17 +206,11 @@ this will enable you to discard I<second> leaf value and append to it whatever d
 
 =head1 DESCRIPTION
 
-The purpose of JSONP is to give an easy and fast way to build JSON only web services that can be used even from a different domain from which one they are hosted on. It is supplied only the object interface: this module does not export any symbol, apart the optional pointer to its own instance in the CGI environment (not possible in mod_perl environment).
+The purpose of JSONP is to give an easy and fast way to build JSON-only web services that can be used even from a different domain from which one they are hosted on. It is supplied only the object interface: this module does not export any symbol, apart the optional pointer to its own instance in the CGI environment (not possible in mod_perl environment).
 Once you have the instance of JSONP, you can build a response hash tree, containing whatever data structure, that will be automatically sent back as JSON object to the calling page. The built-in automatic cookie session keeping uses a secure SHA256 to build the session key. The related cookie is HttpOnly, Secure (only SSL) and with path set way down the one of current script (keep the authentication script in the root of your scripts path to share session among all scripts). For high trusted intranet environments a method to disable the Secure flag has been supplied. The automatically built cookie key will be long exactly 64 chars (hex format). 
-You can retrieve parameters supplied from browser either via GET, POST, PUT, or DELETE by accessing the reserved I<params> key of JSONP object. For example the value of a parameter named I<test> will be accessed via $j->params->test. It is better to check the existance of expected parameters before to access them:
-
-	if(exists $j->params->{test}){ # note the braces on actual parameter name for exists function to work
-		$testparam = $j->params->test;
-	}
-
-otherwise I<$testparam> will end to be a void hash reference because of autovivification feature of JSONP. In case of POSTs or PUTs of application/json requests (JSONP application/javascript requests are always loaded as GETs) the JSONP module will transparently detect them and populate the I<params> key with the deserialization of posted JSON, note that in this case the JSON being P(OS|U)Ted must be an object and not an array, having a I<req> param key on the first level of the structure in order to point out the corresponding function to be invoked.
-You have to provide the string name or sub ref (the module accepts either way) of your own I<aaa> and I<login> functions. The AAA (aaa) function will get called upon every request with the session key (retrieved from session cookie or newly created for brand new sessions) as argument. That way you will be free to implement routines for authentication, authorization, access, and session tracking that most suit your needs, together with rules for user/groups to access the methods you expose. Your AAA function must return the session string (if you previously saved it, read on) if a valid session exists under the given key. A return value evaluated as false by perl will result in a 'forbidden' response (you can add as much errors as you want in the I<errors> array of response object). B<Be sure you return a false value if the user is not authenticated!> otherwise you will give access to all users. If you want you can check the invoked method under the req parameter (see query method) in order to implement your own access policies. The AAA function will be called a second time just before the response to client will be sent out, with the session key as first argument, and a serialized string of the B<session> branch as second (as you would have modified it inside your called function). This way if your AAA function gets called with only one paramenter it is the begin of the request cycle, and you have to retrieve and check the session saved in your storage of chose (memcached, database, whatever), if it gets called with two arguments you can save the updated session object (already serialized as UTF-8 JSON) to the storage under the given key. The B<session> key of JSONP object will be reserved for session tracking, everything you will save in that branch will be passed serialized to your AAA function right before the response to client. It will be also populated after the serialized string you will return from your AAA function at the beginning of the cycle. The login function will get called with the current session key (from cookie or newly created) as parameter, you can retrieve the username and password passed by the query method, as all other parameters. This way you will be free to give whatever name you like to those two parameters. Return the outcome of login attempt in order to pass back to login javascript call the state of authentication. Whatever value that evaluates to true will be seen as "authentication ok", whatever value that Perl evaluates to false will be seen as "authentication failed". Subsequent calls (after authentication) will track the authentication status by mean of the session string you return from AAA function.
-So if you need to add a method/call/feature to your application you have only to add a sub with same name you will pass under I<req> parameter.
+You can retrieve parameters supplied from browser either via GET, POST, PUT, or DELETE by accessing the reserved I<params> key of JSONP object. For example the value of a parameter named I<test> will be accessed via $j->params->test. In case of POSTs or PUTs of application/json requests (JSONP application/javascript requests are always loaded as GETs) the JSONP module will transparently detect them and populate the I<params> key with the deserialization of posted JSON, note that in this case the JSON being P(OS|U)Ted must be an object and not an array, having a I<req> param key on the first level of the structure in order to point out the corresponding function to be invoked.
+You have to provide the string name or sub ref (the module accepts either way) of your own I<aaa> and I<login> functions. The AAA (aaa) function will get called upon every request with the session key (retrieved from session cookie or newly created for brand new sessions) as argument. That way you will be free to implement routines for authentication, authorization, access, and session tracking that most suit your needs, together with rules for user/groups to access the methods you expose. Your AAA function must return the session string (if you previously saved it, read on) if a valid session exists under the given key. A return value evaluated as false by perl will result in a 'forbidden' response (you can add as much errors as you want in the I<errors> array of response object). B<Be sure you return a false value if the user is not authenticated!> otherwise you will give access to all users. If you want you can check the invoked method under the req parameter (see query method) in order to implement your own access policies. The AAA function will be called a second time just before the response to client will be sent out, with the session key as first argument, and a serialized string of the B<session> branch as second (as you would have modified it inside your called function). This way if your AAA function gets called with only one paramenter it is the begin of the request cycle, and you have to retrieve and check the session saved in your storage of chose (memcached, database, whatever), if it gets called with two arguments you can save the updated session object (already serialized as UTF-8 JSON) to the storage under the given key. The B<session> key of JSONP object will be reserved for session tracking, everything you will save in that branch will be passed serialized to your AAA function right before the response to client. It will be also populated after the serialized string you will return from your AAA function at the beginning of the request cycle. The login function will get called with the current session key (from cookie or newly created) as parameter, you can retrieve the username and password passed by the query method, as all other parameters. This way you will be free to give whatever name you like to those two parameters. Return the outcome of login attempt in order to pass back to login javascript call the state of authentication. Whatever value that evaluates to true will be seen as "authentication ok", whatever value that Perl evaluates to false will be seen as "authentication failed". Subsequent calls (after authentication) will track the authentication status by mean of the session string you return from AAA function.
+If you need to add a method/call/feature to your application you have only to add a sub with same name you will pass under I<req> parameter from frontend.
 
 =head2 METHODS
 
@@ -220,7 +221,7 @@ sub import
 	my ($self, $name) = @_;
 	return if $ENV{MOD_PERL};
 	return unless $name;
-	die 'not valid variable name' unless $name =~ /^[a-z][0-9a-zA-Z_]{1,31}$/;
+	die 'not valid variable name' unless $name =~ /^[a-z][0-9a-zA-Z_]{0,31}$/;
 	my $symbol = caller() . '::' . $name;
 	{
 		no strict 'refs';
@@ -403,7 +404,7 @@ sub html
 
 =head3 sendfile
 
-use this method if you need to return a file instead of JSON, pass the full file path as as argument. Warning, to keep low dependencies, the mimetype identification works only under unix (file command)
+use this method if you need to return a file instead of JSON, pass the full file path as as argument. Mime type will be set always to I<application/octet-stream>.
 
 	yoursubname
 	{
@@ -440,6 +441,28 @@ sub debug
 	$switch = 1 unless defined $switch;
 	$switch = ! ! $switch;
 	$self->{_debug} = $switch;
+	$self->{_pretty} = $switch;
+	$self;
+}
+
+=head3 pretty
+
+call this method before to call C<run> to enable pretty output on I<serialize> method, basically this one will output pretty printed JSON instead of "compressed" one. You can pass a switch to this method (that will be parsed as bool) to set it I<on> or I<off>. It could be useful if you want to pass a variable. If no switch (or undefined one) is passed, the switch will be set as true. Example:
+
+	$j->pretty->run;
+
+is the same as:
+
+	$j->pretty(1)->run;
+
+=cut
+
+sub pretty
+{
+	my ($self, $switch) = @_;
+	$switch = 1 unless defined $switch;
+	$switch = ! ! $switch;
+	$self->{_pretty} = $switch;
 	$self;
 }
 
@@ -703,7 +726,7 @@ sub serialize
 	my ($self) = @_;
 	my $out;
 	eval{
-		$out = JSON->new->utf8->pretty($$self{_debug} // 0)->allow_blessed->convert_blessed->encode($self);
+		$out = JSON->new->utf8->pretty($$self{_pretty} // 0)->allow_blessed->convert_blessed->encode($self);
 	};
 	
 	$out = $@ ? 'invalid JSON' : $out;
@@ -712,9 +735,9 @@ sub serialize
 sub _bless_tree
 {
 	my ($self, $node) = @_;
-	return unless ref $node eq 'HASH' || ref $node eq 'ARRAY';
 	my $isarray = ref $node eq 'ARRAY';
 	my $ishash  = ref $node eq 'HASH';
+	return unless $isarray || $ishash;
 	bless $node, ref $self;
 	if ($ishash){
 		$self->_bless_tree($node->{$_}) for keys %$node;
@@ -764,11 +787,12 @@ sub AUTOLOAD : lvalue
 	our $AUTOLOAD =~ /^${classname}::($validname)$/;
 	my $key = $1;
 	die "illegal key name, must be of $validname form\n$AUTOLOAD" unless $key;
-	my $miss = Want::want('REF OBJECT') ? {} : '';
 	my $retval = $_[0]->{$key};
-	my $isBool = Want::want('SCALAR BOOL') && ((reftype($retval) // '') eq 'SCALAR');
+	my $isNode = Want::want('REF OBJECT')  ? {} : undef;
+	undef $retval if $isNode && ! reftype($retval);
+	my $isBool = Want::want('SCALAR BOOL') && reftype($retval) && reftype($retval) eq 'SCALAR';
 	$retval = $$retval if $isBool;
-	$_[0]->{$key} = $_[1] // $retval // $miss;
+	$_[0]->{$key} = $_[1] // $retval // $isNode // '';
 	$_[0]->_bless_tree($_[0]->{$key}) if ref $_[0]->{$key} eq 'HASH' || ref $_[0]->{$key} eq 'ARRAY';
 	$_[0]->{$key};
 }
@@ -814,7 +838,7 @@ This library is free software and is distributed under same terms as Perl itself
 
 =head1 COPYRIGHT
 
-Copyright 2014-2015 by Anselmo Canfora.
+Copyright 2014-2017 by Anselmo Canfora.
 
 =cut
 
