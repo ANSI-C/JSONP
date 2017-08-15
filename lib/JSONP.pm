@@ -720,7 +720,7 @@ IMPORTANT NOTE: do not assign any reference to a sub to any node, example:
 for now the module does assume that nodes/leafs will be scalars/hashes/arrays, so same thing is valid for filehandles.
 
 =cut
-use Data::Dumper;
+
 sub serialize
 {
 	my ($self) = @_;
