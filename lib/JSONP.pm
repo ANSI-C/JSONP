@@ -67,7 +67,7 @@ You must declare the instance variable, remember to use I<local our>.
 
 	sub yoursubname
 	{
-		my $namedparam = $j->params->namedparam; 
+		my $namedparam = $j->params->namedparam;
 		$j->table->fields = $sh->{NAME};
 		$j->table->data = $sh->fetchall_arrayref;
 	}
@@ -82,7 +82,7 @@ option setting methods allow for chained calls:
 
 	sub yoursubname
 	{
-		my $namedparam = $j->params->namedparam; 
+		my $namedparam = $j->params->namedparam;
 		$j->table->fields = $sh->{NAME};
 		$j->table->data = $sh->fetchall_arrayref;
 	}
@@ -118,10 +118,10 @@ it is equivalent to:
 
 you can even build a tree:
 
-	$jsonp->first->second = 'hello!'; 
+	$jsonp->first->second = 'hello!';
 	print $jsonp->first->second; # will print "hello!"
 
-it is the same as: 
+it is the same as:
 
 	$jsonp->{first}->{second} = 'hello!';
 	print $jsonp->{first}->{second};
@@ -207,7 +207,7 @@ this will enable you to discard I<second> leaf value and append to it whatever d
 =head1 DESCRIPTION
 
 The purpose of JSONP is to give an easy and fast way to build JSON-only web services that can be used even from a different domain from which one they are hosted on. It is supplied only the object interface: this module does not export any symbol, apart the optional pointer to its own instance in the CGI environment (not possible in mod_perl environment).
-Once you have the instance of JSONP, you can build a response hash tree, containing whatever data structure, that will be automatically sent back as JSON object to the calling page. The built-in automatic cookie session keeping uses a secure SHA256 to build the session key. The related cookie is HttpOnly, Secure (only SSL) and with path set way down the one of current script (keep the authentication script in the root of your scripts path to share session among all scripts). For high trusted intranet environments a method to disable the Secure flag has been supplied. The automatically built cookie key will be long exactly 64 chars (hex format). 
+Once you have the instance of JSONP, you can build a response hash tree, containing whatever data structure, that will be automatically sent back as JSON object to the calling page. The built-in automatic cookie session keeping uses a secure SHA256 to build the session key. The related cookie is HttpOnly, Secure (only SSL) and with path set way down the one of current script (keep the authentication script in the root of your scripts path to share session among all scripts). For high trusted intranet environments a method to disable the Secure flag has been supplied. The automatically built cookie key will be long exactly 64 chars (hex format).
 You can retrieve parameters supplied from browser either via GET, POST, PUT, or DELETE by accessing the reserved I<params> key of JSONP object. For example the value of a parameter named I<test> will be accessed via $j->params->test. In case of POSTs or PUTs of application/json requests (JSONP application/javascript requests are always loaded as GETs) the JSONP module will transparently detect them and populate the I<params> key with the deserialization of posted JSON, note that in this case the JSON being P(OS|U)Ted must be an object and not an array, having a I<req> param key on the first level of the structure in order to point out the corresponding function to be invoked.
 You have to provide the string name or sub ref (the module accepts either way) of your own I<aaa> and I<login> functions. The AAA (aaa) function will get called upon every request with the session key (retrieved from session cookie or newly created for brand new sessions) as argument. That way you will be free to implement routines for authentication, authorization, access, and session tracking that most suit your needs, together with rules for user/groups to access the methods you expose. Your AAA function must return the session string (if you previously saved it, read on) if a valid session exists under the given key. A return value evaluated as false by perl will result in a 'forbidden' response (you can add as much errors as you want in the I<errors> array of response object). B<Be sure you return a false value if the user is not authenticated!> otherwise you will give access to all users. If you want you can check the invoked method under the req parameter (see query method) in order to implement your own access policies. The AAA function will be called a second time just before the response to client will be sent out, with the session key as first argument, and a serialized string of the B<session> branch as second (as you would have modified it inside your called function). This way if your AAA function gets called with only one paramenter it is the begin of the request cycle, and you have to retrieve and check the session saved in your storage of chose (memcached, database, whatever), if it gets called with two arguments you can save the updated session object (already serialized as UTF-8 JSON) to the storage under the given key. The B<session> key of JSONP object will be reserved for session tracking, everything you will save in that branch will be passed serialized to your AAA function right before the response to client. It will be also populated after the serialized string you will return from your AAA function at the beginning of the request cycle. The login function will get called with the current session key (from cookie or newly created) as parameter, you can retrieve the username and password passed by the query method, as all other parameters. This way you will be free to give whatever name you like to those two parameters. Return the outcome of login attempt in order to pass back to login javascript call the state of authentication. Whatever value that evaluates to true will be seen as "authentication ok", whatever value that Perl evaluates to false will be seen as "authentication failed". Subsequent calls (after authentication) will track the authentication status by mean of the session string you return from AAA function.
 If you need to add a method/call/feature to your application you have only to add a sub with same name you will pass under I<req> parameter from frontend.
@@ -325,7 +325,7 @@ sub run
 			-httponly	=> 1
 		};
 		$cookie->{-expires} = "+$$self{_session_expiration}s" if $self->{_session_expiration};
-		$header->{-cookie} = $r->cookie($cookie); 
+		$header->{-cookie} = $r->cookie($cookie);
 	}
 
 	if (! ! $session && defined &$map || $isloginsub) {
@@ -510,7 +510,7 @@ sub query
 =head3 plain_json
 
 B<this function is deprecated and has no effect anymore, now a plain JSON request will be returned if no I<callback> parameter will be provided.>
-call this function to enable output in simple JSON format (not enclosed within jquery_callback_name()... ). Do this only when your script is on the same domain of static content. This method can be useful also during testing of your application. You can pass a switch to this method (that will parsed as bool) to set it on or off. It could be useful if you want to pass a variable. If no switch (or undefined one) is passed, the switch will be set as true. 
+call this function to enable output in simple JSON format (not enclosed within jquery_callback_name()... ). Do this only when your script is on the same domain of static content. This method can be useful also during testing of your application. You can pass a switch to this method (that will parsed as bool) to set it on or off. It could be useful if you want to pass a variable. If no switch (or undefined one) is passed, the switch will be set as true.
 
 =cut
 
@@ -711,7 +711,7 @@ call this method to serialize and output a subtree:
 	$j->sublist->graft->('newbranchname', '[{"name" : "first one"}, {"name" : "second one"}]');
 	print $j->sublist->newbranchname->[1]->name; will print "second one"
 	$j->subtree->newbranchname->graft('subtree', '{"name" : "some string", "count" : 4}');
-	print $j->subtree->newbranchname->subtree->serialize; # will print '{"name" : "some string", "count" : 4}' 
+	print $j->subtree->newbranchname->subtree->serialize; # will print '{"name" : "some string", "count" : 4}'
 
 IMPORTANT NOTE: do not assign any reference to a sub to any node, example:
 
@@ -724,11 +724,11 @@ for now the module does assume that nodes/leafs will be scalars/hashes/arrays, s
 sub serialize
 {
 	my ($self) = @_;
-	my $out;
+	my $out = '';
 	eval{
-		$out = JSON->new->utf8->pretty($$self{_pretty} // 0)->allow_blessed->convert_blessed->encode($self);
+		my $pretty = reftype $self eq 'HASH' ? 1 : 0;
+		$out = JSON->new->utf8->pretty($pretty)->allow_blessed->convert_blessed->encode($self);
 	};
-	
 	$out = $@ ? 'invalid JSON' : $out;
 }
 
@@ -753,15 +753,10 @@ sub TO_JSON
 	my $self = shift;
 	return 'true'  if ref $self eq 'SCALAR' && $$self == 1;
 	return 'false' if ref $self eq 'SCALAR' && $$self == 0;
-	my $output;
 
-	if(reftype $self eq 'ARRAY'){
-		$output = [];
-		push @$output, $_ for @$self;
-		return $output;
-	}
+	return [@{ $self }] if reftype $self eq 'ARRAY';
 
-	$output = {};
+	my $output = {};
 	for(keys %$self){
 		my $skip;
 		my $nodebug = ! $self->{_debug};
@@ -783,7 +778,7 @@ sub DESTROY{}
 sub AUTOLOAD : lvalue
 {
 	my $classname =  ref $_[0];
-	my $validname = '[a-zA-Z][a-zA-Z0-9_]*'; 
+	my $validname = '[a-zA-Z][a-zA-Z0-9_]*';
 	our $AUTOLOAD =~ /^${classname}::($validname)$/;
 	my $key = $1;
 	die "illegal key name, must be of $validname form\n$AUTOLOAD" unless $key;
