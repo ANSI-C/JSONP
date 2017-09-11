@@ -1,6 +1,6 @@
 Revision history for Perl extension JSONP.
 
-1.71
+1.72
 
 	- corrections on this "Changes" file
 
@@ -8,6 +8,7 @@ Revision history for Perl extension JSONP.
 
 	- make JSONP compatible with perlcritic
 	- fixed bug where JSONP returning 'true' and 'false' strings instead of true and false JSON values - thanks Robert Acock
+	- fixed bug preventing serialization of array nodes - thanks Robert Acock
 	- addition of "file" method call, more flexible than "sendfile" one, courtesy of Robert Acock
 	- addition of "pretty" call
 	- slight performance improvement in _bless_tree - thanks Robert Acock
