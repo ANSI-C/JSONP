@@ -1,5 +1,9 @@
 Revision history for Perl extension JSONP.
 
+1.75
+
+	- fix bug on serialize when "pretty" is not defined
+
 1.74
 
 	- fix bug on serialize defaulting to "pretty" to true - thanks Robert Acock for reporting it
