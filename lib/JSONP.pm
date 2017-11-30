@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.78';
+our $VERSION = '1.79';
 
 =encoding utf8
 
@@ -237,7 +237,6 @@ class constructor, it does not accept any parameter by user. The options have to
 
 sub new
 {
-say $VERSION;
 	my ($class) = @_;
 	bless {_is_root_element => 1, error => \0}, $class;
 }
