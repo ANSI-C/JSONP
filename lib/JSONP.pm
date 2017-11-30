@@ -237,8 +237,9 @@ class constructor, it does not accept any parameter by user. The options have to
 
 sub new
 {
+say $VERSION;
 	my ($class) = @_;
-	bless {_is_root_element => 1}, $class;
+	bless {_is_root_element => 1, error => \0}, $class;
 }
 
 =head3 run
@@ -624,7 +625,7 @@ call this method in order to return an error message to the calling page. You ca
 sub raiseError
 {
 	my ($self, $message) = @_;
-	$self->{error} = \1;
+	$self->error = \1;
 	push @{$self->{errors}}, $message;
 	$self;
 }
@@ -805,7 +806,7 @@ sub AUTOLOAD : lvalue
 	my $miss = Want::want('REF OBJECT') ? {} : '';
 	my $retval = $_[0]->{$key};
 	my $isBool = Want::want('SCALAR BOOL') && ((reftype($retval) // '') eq 'SCALAR');
-	$retval = $$retval if $isBool;
+	return $$retval if $isBool;
 	$_[0]->{$key} = $_[1] // $retval // $miss;
 	$_[0]->_bless_tree($_[0]->{$key}) if ref $_[0]->{$key} eq 'HASH' || ref $_[0]->{$key} eq 'ARRAY';
 	$_[0]->{$key};
