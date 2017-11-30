@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.77';
+our $VERSION = '1.78';
 
 =encoding utf8
 
@@ -799,7 +799,7 @@ sub DESTROY{}
 sub AUTOLOAD : lvalue
 {
 	my $classname =  ref $_[0];
-	my $validname = '[\pL][\pL\pM\pN\pZ_]{0,2047}';
+	my $validname = '^[^[:punct:][:cntrl:][:digit:]](?:[^[:punct:][:cntrl:]]|[<>_+-]){0,1023}$';
 	our $AUTOLOAD =~ /^${classname}::($validname)$/;
 	my $key = $1;
 	die "illegal key name, must be of $validname form\n$AUTOLOAD" unless $key;
