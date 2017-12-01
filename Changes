@@ -1,5 +1,12 @@
 Revision history for Perl extension JSONP.
 
+1.80
+
+	- fix CPAN bug #123796
+	- allow all-digit keys for autovivification
+	- extend further allowed char class for keys in autovivification
+	- add couple tests
+
 1.79
 
 	- remove forgotten $VERSION print
