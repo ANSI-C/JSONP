@@ -798,7 +798,7 @@ sub DESTROY{}
 sub AUTOLOAD : lvalue
 {
 	my $classname =  ref $_[0];
-	my $validname = q{(?:[^[:cntrl:][:space:][:punct:][:digit:]][^'[:cntrl:]]{0,1023}|\d{1,1024})};
+	my $validname = q{(?:[^[:cntrl:][:space:][:punct:][:digit:]][^':[:cntrl:]]{0,1023}|\d{1,1024})};
 	our $AUTOLOAD =~ /^${classname}::($validname)$/;
 	my $key = $1;
 	die "illegal key name, must be of $validname form\n$AUTOLOAD" unless $key;
