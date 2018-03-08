@@ -1,5 +1,9 @@
 Revision history for Perl extension JSONP.
 
+1.85
+
+	- add "rest" method switch
+
 1.84
 
 	- fix bug on non-JSONP blessed objects convertion
