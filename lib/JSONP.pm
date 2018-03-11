@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.85';
+our $VERSION = '1.86';
 
 =encoding utf8
 
@@ -670,7 +670,7 @@ sub graft
 	my ($self, $name, $json) = @_;
 
 	eval{
-		$self->{$name} = JSON->new->decode($json // '');
+		$self->{$name} = JSON->new->allow_nonref->decode($json // '');
 	};
 
 	return 0 if $@;
@@ -705,7 +705,7 @@ sub stack
 	return 0 unless reftype $self eq 'ARRAY';
 
 	eval{
-		push @$self, JSON->new->decode($json);
+		push @$self, JSON->new->allow_nonref->decode($json // '');
 	};
 	return 0 if $@;
 
