@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.87';
+our $VERSION = '1.88';
 
 =encoding utf8
 
@@ -307,7 +307,7 @@ sub run
 	my $session = $self->{_aaa_sub}->($sid);
 	$self->{_authenticated} = ! ! $session;
 	if($self->{_authenticated}){
-		$self->graft('session', $session)
+		$self->session = {} unless $self->graft('session', $session);
 	} else {
 		$self->session = {};
 	}

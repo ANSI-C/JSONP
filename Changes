@@ -1,5 +1,8 @@
 Revision history for Perl extension JSONP.
 
+1.88
+	- prevent error on failed saved session graft
+
 1.87
 	- allow nonref and unknown type in encoding JSON for resiliency
 
