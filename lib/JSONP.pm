@@ -386,8 +386,10 @@ sub run
 		}
 	}
 
-	$r->r->rflush if $self->{_mod_perl};
-	$r->r->status(200);
+	if ($self->{_mod_perl}) {
+		$r->r->rflush;
+		$r->r->status(200);
+	}
 
 	$self;
 }
