@@ -654,7 +654,7 @@ sub raiseError
 {
 	my ($self, $message, $code) = @_;
 	$self->error = \1;
-	push @{$self->{errors}}, reftype $message eq 'ARRAY' ? @$message : $message;
+	push @{$self->{errors}}, reftype $message || '' eq 'ARRAY' ? @$message : $message;
 	$self->{_status_code} = $code if defined $code;
 	$self;
 }
