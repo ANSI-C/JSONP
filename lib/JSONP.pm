@@ -355,7 +355,7 @@ sub run
 
 	# give a nice JSON "true"/"false" output for authentication
 	$self->authenticated = $self->{_authenticated} ? \1 : \0;
-
+	$header->{'-status'} = $self->{_status_code} || 200;
 	my $callback;
 	unless($self->{_passthrough}){
 		$callback = $self->params->callback if $self->{_request_method} eq 'GET';
@@ -385,6 +385,12 @@ sub run
 			print $self->_slurp($self->{_sendfile});
 		}
 	}
+
+	if ($self->{_mod_perl}) {
+		$r->r->rflush;
+		$r->r->status(200);
+	}
+
 	$self;
 }
 
@@ -646,9 +652,10 @@ call this method in order to return an error message to the calling page. You ca
 
 sub raiseError
 {
-	my ($self, $message) = @_;
+	my ($self, $message, $code) = @_;
 	$self->error = \1;
-	push @{$self->{errors}}, $message;
+	push @{$self->{errors}}, reftype $message || '' eq 'ARRAY' ? @$message : $message;
+	$self->{_status_code} = $code if defined $code;
 	$self;
 }
 
