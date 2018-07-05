@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.88';
+our $VERSION = '1.89';
 
 =encoding utf8
 
@@ -386,11 +386,6 @@ sub run
 		}
 	}
 
-	if ($self->{_mod_perl}) {
-		$r->r->rflush;
-		$r->r->status(200);
-	}
-
 	$self;
 }
 
@@ -654,7 +649,7 @@ sub raiseError
 {
 	my ($self, $message, $code) = @_;
 	$self->error = \1;
-	push @{$self->{errors}}, reftype $message || '' eq 'ARRAY' ? @$message : $message;
+	push @{$self->{errors}}, (reftype $message // '') eq 'ARRAY' ? @$message : $message;
 	$self->{_status_code} = $code if defined $code;
 	$self;
 }
