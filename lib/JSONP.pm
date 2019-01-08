@@ -12,7 +12,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.91';
+our $VERSION = '1.92';
 
 =encoding utf8
 
@@ -247,6 +247,22 @@ executes the subroutine specified by req paramenter, if it exists, and returns t
 
 =cut
 
+sub _auth
+{
+	my ($self, $sid, $session) = @_;
+	my $authenticated = eval {
+			$self->{_aaa_sub}->($sid, $session);
+	};
+
+	if($@){
+		$self->{eval} = $@ if $self->{_debug};
+		$self->raiseError('unclassified error');
+		$authenticated = 0;
+	}
+
+	$authenticated;
+}
+
 sub run
 {
 	my $self = shift;
@@ -304,7 +320,7 @@ sub run
 	my $sid = $r->cookie('sid');
 
 	my $map = caller() . '::' . $req;
-	my $session = $self->{_aaa_sub}->($sid);
+	my $session = $self->_auth($sid);
 	$self->{_authenticated} = ! ! $session;
 	if($self->{_authenticated}){
 		$self->session = {} unless $self->graft('session', $session);
@@ -342,6 +358,7 @@ sub run
 			my $outcome = &$map($sid);
 			$self->{_authenticated} = $outcome if $isloginsub;
 		};
+
 		if($@){
 			$self->{eval} = $@ if $self->{_debug};
 			$self->raiseError('unclassified error');
@@ -354,14 +371,14 @@ sub run
 			# pass it back to aaa sub that will save it to storage
 			# note that current session keys/values will override
 			# concurrent ones, see _merge function for details
-			my $concurrentSession = $self->{_aaa_sub}->($sid);
+			my $concurrentSession = $self->_auth($sid);
 			my $thisSession = $self->session->serialize;
 			$self->graft('thisSession', $thisSession);
 			delete $self->{session};
 			$self->graft('session', $concurrentSession);
 			$self->_merge($self->session, $self->thisSession);
 			delete $self->{thisSession};
-			$self->{_aaa_sub}->($sid, $self->session->serialize);
+			$self->_auth($sid, $self->session->serialize);
 		}
 
 	} elsif (! $req) {
@@ -402,6 +419,13 @@ sub run
 			print $self->_slurp($self->{_sendfile});
 			unlink $self->{_sendfile} if $self->{_delete_after_download}
 		}
+	}
+
+	if($self->{_mod_perl}){
+		my $rh = $r->r;
+		# suppress default Apache response
+		$rh->custom_response($self->{_status_code}, '');
+		$rh->rflush;
 	}
 
 	$self;
