@@ -691,7 +691,7 @@ sub logout
 
 =head3 raiseError
 
-call this method in order to return an error message to the calling page. You can add as much messages you want, calling the method several times, it will be returned an array of messages to the calling page.
+call this method in order to return an error message to the calling page. You can add as much messages you want, calling the method several times, it will be returned an array of messages to the calling page. The first argument could be either a string or a <B strings array reference>. The second argument is an optional HTTP status code, the default will be 200.
 
 =cut
 
@@ -707,7 +707,6 @@ sub raiseError
 =head3 graft
 
 call this method to append a JSON object as a perl subtree on a node. This is a native method, only function notation is supported, lvalue assignment notation is reserved to autovivification shortcut feature. Examples:
-
 	$j->subtree->graft('newbranchname', '{"name" : "JSON object", "count" : 2}');
 	print $j->subtree->newbranchname->name; # will print "JSON object"
 	$j->sublist->graft->('newbranchname', '[{"name" : "first one"}, {"name" : "second one"}]');
