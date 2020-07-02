@@ -1,5 +1,13 @@
 Revision history for Perl extension JSONP.
 
+2.00
+	- add loop method
+	- constructor can now accept Perl objects and JSON strings
+	- UTF-8 handling moved from JSON serialize/deserialize section to input/output layers
+	- fixed a bug returning a void object instead of void string while syntactic sugar called inside the argument of a function
+	- you cannot overwrite anymore an existent leaf with an object with syntactic sugar calls, now need to delete the leaf first
+	- various minor bug fixes and improvements
+
 1.93
 	- add automatic temporary directory management
 	- add tempdir method
