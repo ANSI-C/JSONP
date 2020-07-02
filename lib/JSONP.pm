@@ -16,7 +16,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 =encoding utf8
 
@@ -286,6 +286,7 @@ sub _auth {
 sub run {
 	my $self = shift;
 	$self->{_is_root_element} = 1;
+	return $self unless (reftype $self // '') eq 'HASH' && $self->{_is_root_element};
 	$self->{_authenticated} = 0;
 	$self->{error} = \0;
 	$self->errors = [];
