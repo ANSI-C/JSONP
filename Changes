@@ -1,5 +1,8 @@
 Revision history for Perl extension JSONP.
 
+2.11
+	- fix two corner bugs occurring on complex scenarios
+
 2.10
 	- fix bug on recursive blessing
 

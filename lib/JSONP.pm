@@ -16,7 +16,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '2.10';
+our $VERSION = '2.11';
 
 =encoding utf8
 
@@ -1009,8 +1009,10 @@ sub _bless_tree {
 	my $refnode = ref $node;
 	# proceed only with hashes or arrays not already blessed
 	return if $refnode eq $class;
-	my $reftype = reftype($node) // '';
-	return unless $reftype eq 'HASH' || $reftype eq 'ARRAY';
+	#my $reftype = reftype($node) // '';
+	#return unless $reftype eq 'HASH' || $reftype eq 'ARRAY';
+	# to not change class to objects grafted to JSONP tree
+	return unless $refnode eq 'HASH' || $refnode eq 'ARRAY';
 	bless $node, $class;
 	if ($refnode eq 'HASH'){
 		$self->_bless_tree($node->{$_}) for keys %$node;
@@ -1031,8 +1033,8 @@ sub TO_JSON {
 	for(keys %$self){
 		my $skip = 0;
 
-		if($self->{_is_root_element}){
-			unless($self->{_debug}){
+		unless($self->{_debug}){
+			if($self->{_is_root_element}){
 				$skip++ if $_ =~ /_sub$/;
 				$skip++ if $_ eq 'session';
 				$skip++ if $_ eq 'params';
