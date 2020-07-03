@@ -1,5 +1,8 @@
 Revision history for Perl extension JSONP.
 
+2.10
+	- fix bug on recursive blessing
+
 2.00
 	- add loop method
 	- constructor can now accept Perl objects and JSON strings

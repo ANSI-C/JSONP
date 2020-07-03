@@ -16,7 +16,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '2.01';
+our $VERSION = '2.10';
 
 =encoding utf8
 
@@ -1005,34 +1005,18 @@ sub _makePath {
 
 sub _bless_tree {
 	my ($self, $node) = @_;
+	my $class = ref $self;
 	my $refnode = ref $node;
 	# proceed only with hashes or arrays not already blessed
-	return unless $refnode eq 'HASH' || $refnode eq 'ARRAY';
-	bless $node, ref $self;
+	return if $refnode eq $class;
+	my $reftype = reftype($node) // '';
+	return unless $reftype eq 'HASH' || $reftype eq 'ARRAY';
+	bless $node, $class;
 	if ($refnode eq 'HASH'){
 		$self->_bless_tree($node->{$_}) for keys %$node;
 	}
 	if ($refnode eq 'ARRAY'){
 		$self->_bless_tree($_) for @$node;
-	}
-	$node;
-}
-
-sub _bless_node {
-	my ($self, $node) = @_;
-	my $refnode = ref $node;
-	# proceed only with hashes or arrays not already blessed
-	return unless $refnode eq 'HASH' || $refnode eq 'ARRAY';
-	bless $node, ref $self;
-	# workaround to allow JSONP items in cases like:
-	# for(@{$jsonp->arraynode}){ do stuff with $_ as JSONP object }
-	if ($refnode eq 'ARRAY'){
-		# avoid recursion to save CPU cycles on lazy blessing
-		for(@$node){
-			my $refitem = ref $_;
-			next unless $refitem eq 'HASH' || $refitem eq 'ARRAY';
-			bless $_, ref $self;
-		}
 	}
 	$node;
 }
@@ -1082,15 +1066,11 @@ sub AUTOLOAD : lvalue {
 
 	if ($arraynode){
 		$_[0]->[$key] = $retval;
-
-		# lazy evaluation on tree blessing
-		$_[0]->_bless_node($_[0]->[$key]);
+		$_[0]->_bless_tree($_[0]->[$key]);
 		return $_[0]->[$key];
 	} else {
 		$_[0]->{$key} = $retval;
-
-		# lazy evaluation on tree blessing
-		$_[0]->_bless_node($_[0]->{$key});
+		$_[0]->_bless_tree($_[0]->{$key});
 		return $_[0]->{$key};
 	}
 }
