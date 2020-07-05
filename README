@@ -2,6 +2,7 @@ JSONP
 ==================
 
 This module is intended to help you to build web applications based on lightweight JSON/JSONP perl web services on the server side and javascript on the client side. jQuery is higly advised.
+It can be used also as a very handy JSON DSL (Domain Specific Language).
 
 INSTALLATION
 
@@ -16,11 +17,11 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-  the only non-core module required is JSON, JSON::XS is advised
+  the only non-core module required are: CGI, JSON, Want. JSON::XS is advised
 
 COPYRIGHT AND LICENCE
 
-Copyright © 2014 - 2017 by Anselmo Canfora
+Copyright © 2014 - 2038 by Anselmo Canfora
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10 or,
