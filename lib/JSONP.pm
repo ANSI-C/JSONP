@@ -1111,7 +1111,6 @@ Remember to always:
 
 the author would be happy to receive suggestions and bug notification. If somebody would like to send code and automated tests for this module, I will be happy to integrate it.
 The code for this module is tracked on this L<GitHub page|https://github.com/ANSI-C/JSONP>.
-Many thanks to L<Robert Acock|https://metacpan.org/author/LNATION> for providing improvement suggestions and bug reports.
 
 =head1 LICENSE
 

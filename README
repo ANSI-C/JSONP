@@ -2,7 +2,7 @@ See https://metacpan.org/pod/JSONP for details.
 
 INSTALLATION
 
-To install this module type the following:
+install this module as customary for Perl:
 
    perl Makefile.PL
    make
