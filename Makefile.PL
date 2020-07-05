@@ -1,3 +1,4 @@
+use 5.010;
 use v5.10;
 use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
@@ -6,7 +7,7 @@ WriteMakefile(
 	NAME				=> 'JSONP',
 	AUTHOR				=> 'Anselmo Canfora <acanfora@cpan.org>',
 	LICENSE				=> 'perl_5',
-	MIN_PERL_VERSION	=> 5.10,
+	MIN_PERL_VERSION	=> 5.010,
 	VERSION_FROM		=> 'lib/JSONP.pm',
 	ABSTRACT_FROM		=> 'lib/JSONP.pm',
 	PREREQ_PM			=> {
