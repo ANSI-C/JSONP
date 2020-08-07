@@ -16,13 +16,13 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '2.17';
+our $VERSION = '1.99';
 
 =encoding utf8
 
 =head1 NAME
 
-JSONP - a module to quickly build JSON/JSONP web services, providing also some syntactic sugar acting a bit like a sort of DSL (domain specific language) for JSON.
+JSONP - a module to quickly build JSON/JSONP web services
 
 =head1 SYNOPSIS
 
@@ -197,6 +197,17 @@ NOTE: in order to get a "pretty print" via serialize method you will need to eit
 	my $deepser = $j->firstnode->serialize; # won't get a pretty print, because deeper than root
 	my $prettydeeper = $j->firstnode->pretty->serialize; # will get a pretty print, because we called I<pretty> first
 
+NOTE: you can even replace a leaf with a new node:
+
+	$j->first = 9;
+
+	... do some things
+
+	$j->first->second = 9;
+	$j->first->second->third = 'Hi!';
+
+this will enable you to discard I<second> leaf value and append to it whatever data structure you like.
+
 =head1 DESCRIPTION
 
 The purpose of JSONP is to give an easy and fast way to build JSON-only web services that can be used even from a different domain from which one they are hosted on. It is supplied only the object interface: this module does not export any symbol, apart the optional pointer to its own instance in the CGI environment (not possible in mod_perl environment).
@@ -223,42 +234,13 @@ sub import {
 
 =head3 new
 
-class constructor. The options have to be set by calling correspondant methods (see below). You can pass a Perl object reference (hash or array) or a JSON string to the constructor, and it will populate automatically the objext, note that when you are using the object as a manager for a web service, <Bit must be an hash>.
-
-my $h = {
-	a => 1,
-	b => 2
-}:
-my $j = JSONP->new($h);
-say $j->serialize;
-
-my $a = ['a', 'b', 'c'];
-my $j = JSONP->new($a);
-say $j->serialize;
-
-my $json = '{"a" : 1, "b" : 2}';
-my $j = JSONP->new($json);
-say $j->serialize;
+class constructor, it does not accept any parameter by user. The options have to be set by calling correspondant methods (see below)
 
 =cut
 
 sub new {
-	my ($class, $json) = @_;
-
-	return bless {}, $class unless defined $json;
-
-	my $type = reftype($json) // '';
-	return bless $json, $class if $type eq 'HASH' || $type eq 'ARRAY';
-
-	if ($type eq '') {
-		eval{
-			local $SIG{'__DIE__'};
-			$json = JSON->new->decode($json // '');
-		};
-		return bless $json, $class unless $@;
-	}
-
-	return 0;
+	my ($class) = @_;
+	bless {_is_root_element => 1}, $class;
 }
 
 =head3 run
@@ -285,8 +267,6 @@ sub _auth {
 
 sub run {
 	my $self = shift;
-	$self->{_is_root_element} = 1;
-	return $self unless (reftype $self // '') eq 'HASH' && $self->{_is_root_element};
 	$self->{_authenticated} = 0;
 	$self->{error} = \0;
 	$self->errors = [];
@@ -588,8 +568,9 @@ is the same as:
 
 sub debug {
 	my ($self, $switch) = @_;
-	return $self unless (reftype $self // '') eq 'HASH';
-	$switch = defined $switch ? !!$switch : 1;
+	return $self unless (reftype $self // '') eq 'HASH' && $self->{_is_root_element};
+	$switch = 1 unless defined $switch;
+	$switch = ! ! $switch;
 	$self->{_debug} = $switch;
 	$self->{_pretty} = $switch;
 	$self;
@@ -610,7 +591,8 @@ is the same as:
 sub pretty {
 	my ($self, $switch) = @_;
 	return $self unless (reftype $self // '') eq 'HASH';
-	$switch = defined $switch ? !!$switch : 1;
+	$switch = 1 unless defined $switch;
+	$switch = ! ! $switch;
 	$self->{_pretty} = $switch;
 	$self;
 }
@@ -623,22 +605,24 @@ call this method if you are going to deploy the script under plain http protocol
 
 sub insecure {
 	my ($self, $switch) = @_;
-	return $self unless (reftype $self // '') eq 'HASH';
-	$switch = defined $switch ? !!$switch : 1;
+	return $self unless (reftype $self // '') eq 'HASH' && $self->{_is_root_element};
+	$switch = 1 unless defined $switch;
+	$switch = ! ! $switch;
 	$self->{_insecure_session} = $switch;
 	$self;
 }
 
 =head3 rest
 
-call this method if you want to omit the I<req> parameter and want that a sub with same name of the script will be called instead, so if your script will be I</var/www/cgi-bin/myscript> the sub I<myscript> will be called instead of the one passed with I<req> (that can be omitted at this point). You can pass a switch to this method (that will parsed as bool) to set it on or off. It could be useful if you want to pass a variable. If no switch (or undefined one) is passed, the switch will be set as true.
+call this method if you want to omit the I<req> parameter and want that a sub with same name of the script will be called instead, so if your script will be I</.../cgi-bin/myscript> the sub I<myscript> will be called instead of the one passed with I<req> (that can be omitted at this point). You can pass a switch to this method (that will parsed as bool) to set it on or off. It could be useful if you want to pass a variable. If no switch (or undefined one) is passed, the switch will be set as true.
 
 =cut
 
 sub rest {
 	my ($self, $switch) = @_;
-	return $self unless (reftype $self // '') eq 'HASH';
-	$switch = defined $switch ? !!$switch : 1;
+	return $self unless (reftype $self // '') eq 'HASH' && $self->{_is_root_element};
+	$switch = 1 unless defined $switch;
+	$switch = ! ! $switch;
 	$self->{_rest} = $switch;
 	$self;
 }
@@ -651,7 +635,7 @@ call this method with desired expiration time for cookie in B<seconds>, the defa
 
 sub set_session_expiration {
 	my ($self, $expiration) = @_;
-	return $self unless (reftype $self // '') eq 'HASH';
+	return $self unless (reftype $self // '') eq 'HASH' && $self->{_is_root_element};
 	$self->{_session_expiration} = $expiration;
 	$self;
 }
@@ -677,8 +661,9 @@ call this function to enable output in simple JSON format (not enclosed within j
 
 sub plain_json {
 	my ($self, $switch) = @_;
-	return $self unless (reftype $self // '') eq 'HASH';
-	$switch = defined $switch ? !!$switch : 1;
+	return $self unless (reftype $self // '') eq 'HASH' && $self->{_is_root_element};
+	$switch = 1 unless defined $switch;
+	$switch = ! ! $switch;
 	$self->{_plain_json} = $switch;
 	$self;
 }
@@ -1000,20 +985,34 @@ sub _makePath {
 
 sub _bless_tree {
 	my ($self, $node) = @_;
-	my $class = ref $self;
 	my $refnode = ref $node;
 	# proceed only with hashes or arrays not already blessed
-	return if $refnode eq $class;
-	#my $reftype = reftype($node) // '';
-	#return unless $reftype eq 'HASH' || $reftype eq 'ARRAY';
-	# to not change class to objects grafted to JSONP tree
 	return unless $refnode eq 'HASH' || $refnode eq 'ARRAY';
-	bless $node, $class;
+	bless $node, ref $self;
 	if ($refnode eq 'HASH'){
 		$self->_bless_tree($node->{$_}) for keys %$node;
 	}
 	if ($refnode eq 'ARRAY'){
 		$self->_bless_tree($_) for @$node;
+	}
+	$node;
+}
+
+sub _bless_node {
+	my ($self, $node) = @_;
+	my $refnode = ref $node;
+	# proceed only with hashes or arrays not already blessed
+	return unless $refnode eq 'HASH' || $refnode eq 'ARRAY';
+	bless $node, ref $self;
+	# workaround to allow JSONP items in cases like:
+	# for(@{$jsonp->arraynode}){ do stuff with $_ as JSONP object }
+	if ($refnode eq 'ARRAY'){
+		# avoid recursion to save CPU cycles on lazy blessing
+		for(@$node){
+			my $refitem = ref $_;
+			next unless $refitem eq 'HASH' || $refitem eq 'ARRAY';
+			bless $_, ref $self;
+		}
 	}
 	$node;
 }
@@ -1063,11 +1062,15 @@ sub AUTOLOAD : lvalue {
 
 	if ($arraynode){
 		$_[0]->[$key] = $retval;
-		$_[0]->_bless_tree($_[0]->[$key]);
+
+		# lazy evaluation on tree blessing
+		$_[0]->_bless_node($_[0]->[$key]);
 		return $_[0]->[$key];
 	} else {
 		$_[0]->{$key} = $retval;
-		$_[0]->_bless_tree($_[0]->{$key});
+
+		# lazy evaluation on tree blessing
+		$_[0]->_bless_node($_[0]->{$key});
 		return $_[0]->{$key};
 	}
 }
@@ -1106,6 +1109,7 @@ Remember to always:
 
 the author would be happy to receive suggestions and bug notification. If somebody would like to send code and automated tests for this module, I will be happy to integrate it.
 The code for this module is tracked on this L<GitHub page|https://github.com/ANSI-C/JSONP>.
+Many thanks to L<Robert Acock|https://metacpan.org/author/LNATION> for providing improvement suggestions and bug reports.
 
 =head1 LICENSE
 
@@ -1113,7 +1117,7 @@ This library is free software and is distributed under same terms as Perl itself
 
 =head1 COPYRIGHT
 
-Copyright 2014-2038 by Anselmo Canfora.
+Copyright 2014-2019 by Anselmo Canfora.
 
 =cut
 
