@@ -16,7 +16,7 @@ use Digest::SHA;
 use JSON;
 use Want;
 
-our $VERSION = '1.99';
+our $VERSION = '2.00';
 
 =encoding utf8
 
@@ -998,25 +998,6 @@ sub _bless_tree {
 	$node;
 }
 
-sub _bless_node {
-	my ($self, $node) = @_;
-	my $refnode = ref $node;
-	# proceed only with hashes or arrays not already blessed
-	return unless $refnode eq 'HASH' || $refnode eq 'ARRAY';
-	bless $node, ref $self;
-	# workaround to allow JSONP items in cases like:
-	# for(@{$jsonp->arraynode}){ do stuff with $_ as JSONP object }
-	if ($refnode eq 'ARRAY'){
-		# avoid recursion to save CPU cycles on lazy blessing
-		for(@$node){
-			my $refitem = ref $_;
-			next unless $refitem eq 'HASH' || $refitem eq 'ARRAY';
-			bless $_, ref $self;
-		}
-	}
-	$node;
-}
-
 sub TO_JSON {
 	my $self = shift;
 	my $output;
@@ -1064,13 +1045,13 @@ sub AUTOLOAD : lvalue {
 		$_[0]->[$key] = $retval;
 
 		# lazy evaluation on tree blessing
-		$_[0]->_bless_node($_[0]->[$key]);
+		$_[0]->_bless_tree($_[0]->[$key]);
 		return $_[0]->[$key];
 	} else {
 		$_[0]->{$key} = $retval;
 
 		# lazy evaluation on tree blessing
-		$_[0]->_bless_node($_[0]->{$key});
+		$_[0]->_bless_tree($_[0]->{$key});
 		return $_[0]->{$key};
 	}
 }
