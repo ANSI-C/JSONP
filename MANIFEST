@@ -1,4 +1,5 @@
 buildme
+JSONP-2.22.tar.gz
 lib/JSONP.pm
 lib/JSONP.pm.1.99
 Makefile.PL
