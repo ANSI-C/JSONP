@@ -19,10 +19,6 @@ use overload
 	fallback => 0,
 	'eq'     => sub {_compare(@_)},
 	'ne'     => sub {! _compare(@_)},
-	'""'     => sub {
-		my $self = shift;
-		$self->serialize;
-	},
 	'bool'   => sub {
 		my $self = shift;
 		! ($self->errors && scalar @{$self->errors});
@@ -54,7 +50,7 @@ sub _compare {
 	return $canonself eq $canonother;
 }
 
-our $VERSION = '2.23';
+our $VERSION = '2.24';
 
 =encoding utf8
 
